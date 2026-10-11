@@ -187,6 +187,10 @@ CI runs install, build, `npm test`, lint, typecheck and format in the required
 macOS and Windows, uploading a JUnit report and an LCOV coverage report per OS (`junit-<os>` and
 `coverage-<os>` artifacts).
 
+Runtime has zero external dependencies (`"dependencies": {}`). Development tools
+(`@types/node`, `c8`, `eslint`, `prettier`, `typescript`) are exact-pinned and
+run strictly during CI validation; they are never bundled into user installations.
+
 ## License
 
 [MIT](LICENSE)

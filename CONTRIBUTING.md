@@ -98,6 +98,8 @@ treated as a broken `main` and fixed before anything else lands.
       `npm run format:check` pass.
 - [ ] `npm run test:coverage` meets the `.c8rc.json` thresholds.
 - [ ] `npm run smoke` passes on your OS.
+- [ ] Any change touching `bunpm/core/*.js` includes tests under `tests/`
+      verifying the change.
 - [ ] User-visible changes have a `CHANGELOG.md` entry under Unreleased.
 - [ ] `package-lock.json` and `bun.lock` are refreshed together when
       dependencies change.

@@ -83,6 +83,10 @@ jobs:
           name: junit-${{ matrix.os }}
           path: ${{ runner.temp }}/junit.xml
       # c8 exits non-zero when any .c8rc.json threshold is missed, failing the job.
+      - name: Print coverage thresholds
+        shell: bash
+        run: |
+          echo "Enforcing c8 thresholds from .c8rc.json: statements 95%, branches 90%, functions 90%, lines 90%"
       - name: Test with coverage (c8 node:test)
         id: coverage
         continue-on-error: false
@@ -99,6 +103,7 @@ jobs:
         run: |
           {
             echo "### Coverage (${{ matrix.os }})"
+            echo "Gate: statements 95%, branches 90%, functions 90%, lines 90%"
             echo '```'
             npx c8 report --reporter=text
             echo '```'
