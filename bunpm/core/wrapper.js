@@ -162,10 +162,9 @@ async function main(invokedAs = process.argv[2], args = process.argv.slice(3)) {
     let started = false;
     /** @type {Pick<SpawnResult, 'error' | 'signal' | 'status'>} */
     const result = await new Promise((resolve) => {
-      const child =
-        /** @type {import('node:child_process').ChildProcessByStdio<null, import('node:stream').Readable, import('node:stream').Readable>} */ (
-          /** @type {unknown} */ (cp.spawn(file, argv, options))
-        );
+      const child = /** @type {import('node:child_process').ChildProcess} */ (
+        cp.spawn(file, argv, options)
+      );
       // Forward Ctrl+C and termination to Bun, and keep the wrapper alive until
       // Bun exits, so its last output and exit status are not lost and a
       // SIGTERM sent only to the wrapper cannot orphan the install.
@@ -191,8 +190,18 @@ async function main(invokedAs = process.argv[2], args = process.argv.slice(3)) {
           ? (failure = error)
           : done({ error, status: null, signal: null }),
       );
-      formatStream(child.stdout, (text) => process.stdout.write(text), context);
-      formatStream(child.stderr, (text) => process.stderr.write(text), context);
+      if (child.stdout)
+        formatStream(
+          child.stdout,
+          (text) => process.stdout.write(text),
+          context,
+        );
+      if (child.stderr)
+        formatStream(
+          child.stderr,
+          (text) => process.stderr.write(text),
+          context,
+        );
       // 'close' fires after exit and after both pipes ended (and were written).
       child.on(
         'close',
