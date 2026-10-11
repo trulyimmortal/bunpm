@@ -9,6 +9,16 @@
 - SIGINT and SIGTERM received by the wrapper are forwarded to a streamed Bun
   child, and the wrapper waits for Bun to exit instead of quitting first.
 
+- `yarn` invocations in Yarn Berry Plug'n'Play projects (detected by `.pnp.cjs`
+  or `.pnp.js` in current working directory) fall back to native Yarn, avoiding
+  conflicting `node_modules` generation.
+
+- Unix uninstaller (`uninstall.sh` on Linux and macOS) removes the preceding
+  empty line introduced during installation, preventing blank line buildup.
+
+- Diagnostics export `formatDiagnostic` from `bunpm/core/log.js` with documented
+  JSON schema fields under `BUNPM_DEBUG=1`.
+
 ## 2.1.0 - 2026-10-08
 
 - `pnpm install <pkg>` falls back to pnpm; `bun install` ignores package names,
