@@ -4,6 +4,33 @@
 // for CI pipelines and tools that embed bunpm.
 
 /**
+ * @typedef {object} DiagnosticRecord
+ * @property {string} timestamp ISO 8601 UTC timestamp
+ * @property {'error'} level diagnostic severity level
+ * @property {string} component failing part: wrapper, exec, detector, doctor, ...
+ * @property {string} message actionable text, cause preserved verbatim
+ * @property {string} [code] error code such as ENOENT, when known
+ */
+
+/**
+ * Create a structured diagnostic record matching the schema.
+ *
+ * @param {string} component
+ * @param {string} message
+ * @param {string} [code]
+ * @returns {DiagnosticRecord}
+ */
+function formatDiagnostic(component, message, code) {
+  return {
+    timestamp: new Date().toISOString(),
+    level: 'error',
+    component,
+    message,
+    ...(code && { code }),
+  };
+}
+
+/**
  * @param {string} component failing part: wrapper, exec, detector, doctor, ...
  * @param {string} message actionable text, cause preserved verbatim
  * @param {string} [code] error code such as ENOENT, when known
@@ -11,15 +38,7 @@
 function log(component, message, code) {
   console.error(`bunpm: ${component}: ${message}`);
   if (process.env.BUNPM_DEBUG === '1')
-    console.error(
-      JSON.stringify({
-        timestamp: new Date().toISOString(),
-        level: 'error',
-        component,
-        message,
-        ...(code && { code }),
-      }),
-    );
+    console.error(JSON.stringify(formatDiagnostic(component, message, code)));
 }
 
-module.exports = { log };
+module.exports = { log, formatDiagnostic };

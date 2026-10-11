@@ -1,7 +1,7 @@
 const { test, mock, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
 const cp = require('node:child_process');
-const { log } = require('../bunpm/core/log');
+const { log, formatDiagnostic } = require('../bunpm/core/log');
 const { exitCode } = require('../bunpm/core/wrapper');
 
 const saved = process.env.BUNPM_DEBUG;
@@ -90,3 +90,14 @@ for (const [script, args, component] of [
     assert.equal(record.component, component);
     assert.equal(human, `bunpm: ${component}: ${record.message}`);
   });
+
+test('formatDiagnostic creates a schema-valid diagnostic record', () => {
+  const record = formatDiagnostic('wrapper', 'something failed', 'ENOENT');
+  assert.equal(record.level, 'error');
+  assert.equal(record.component, 'wrapper');
+  assert.equal(record.message, 'something failed');
+  assert.equal(record.code, 'ENOENT');
+  assert.equal(new Date(record.timestamp).toISOString(), record.timestamp);
+  const withoutCode = formatDiagnostic('doctor', 'no code');
+  assert.equal('code' in withoutCode, false);
+});

@@ -49,8 +49,37 @@ flowchart LR
   (Node.js floor, Bun, launchers, original managers).
 - [`core/formatter.js`](bunpm/core/formatter.js): line-by-line cosmetic rewrite
   of non-interactive Bun output.
+- [`core/log.js`](bunpm/core/log.js): single diagnostic channel and structured
+  error logger. Emits human-readable `bunpm: <component>: <message>` stderr
+  lines by default, and schema-valid JSON lines under `BUNPM_DEBUG=1`.
 
-## Boundaries
+## Diagnostics & Observability
+
+bunpm is a short-lived CLI utility rather than a long-running service daemon, so
+traditional HTTP health endpoints, Prometheus metrics and daemon loggers are not
+applicable. Instead, observability is delivered through two structured diagnostic
+channels:
+
+1. **Human Diagnostic Line (stderr, default)**:
+   Every bunpm failure prints `bunpm: <component>: <message>` to stderr so users
+   can distinguish wrapper failures from target package manager output.
+
+2. **Structured JSON Diagnostic (stderr, `BUNPM_DEBUG=1`)**:
+   When `BUNPM_DEBUG=1` is set in the environment, bunpm emits an additional
+   single-line JSON object on stderr for automated CI pipelines and tooling:
+
+   | Field       | Type      | Description                                                              |
+   | ----------- | --------- | ------------------------------------------------------------------------ |
+   | `timestamp` | `string`  | ISO 8601 UTC timestamp of the diagnostic event                           |
+   | `level`     | `string`  | Fixed severity level (`"error"`)                                         |
+   | `component` | `string`  | Failing subsystem (`wrapper`, `exec`, `detector`, `doctor`, `bootstrap`) |
+   | `message`   | `string`  | Actionable error message preserving root cause                           |
+   | `code`      | `string?` | Optional system errno code (e.g., `ENOENT`, `EACCES`) when known         |
+
+Exit codes are preserved verbatim from child processes, with signal terminations
+mapped to `128 + signo`. Wrapper-level errors exit with code `1`.
+
+## Boundaries & Dependencies
 
 [`bootstrap.js`](bunpm/bootstrap.js) ([Remote Bootstrap](README.md#remote-bootstrap)) and the platform installers run once, by
 hand, and are never imported by the wrapper. Bootstrap imports nothing from
@@ -60,11 +89,20 @@ Trust boundaries: bunpm runs whatever Bun and original managers your absolute
 PATH entries resolve to, without validating them. Only `bootstrap.js` performs
 network I/O, restricted to this repository at one commit SHA; child processes
 reach registries under their own configuration. Installers write only under
-`~/.bunpm`, one shell profile, or Windows User PATH. bunpm's own failures are
-always `bunpm: <component>: <message>` on stderr; set `BUNPM_DEBUG=1` to get an
-extra JSON line (`level`, `component`, `message`, `code`) per failure.
+`~/.bunpm`, one shell profile, or Windows User PATH.
 
-Observability: bunpm is a one-shot process with no daemon or port, so it has no
-logging backend, metrics or health endpoint. Its exit code and the stderr lines
-above (plus `BUNPM_DEBUG`) are the whole diagnostic surface. See
-[SECURITY.md](SECURITY.md) to report a vulnerability.
+Dependency boundaries & pruning rationale:
+
+- **Zero Runtime Dependencies**: `bunpm` runtime maintains an absolute zero-dependency
+  boundary (`"dependencies": {}` in `package.json`). Installation copies only raw
+  CommonJS runtime files from `bunpm/core/` and platform launchers into `~/.bunpm`.
+  No `node_modules` directory is ever created or required at runtime.
+- **Dev-Dependency Pruning Rationale**:
+  All 5 `devDependencies` are pinned to exact versions for automated CI gates only:
+  - `@types/node` (`16.18.126`): enforces Node 16 runtime compatibility at compile-time.
+  - `c8` (`12.0.0`): collects native V8 code coverage without modifying source code.
+  - `eslint` (`10.12.0`): enforces zero-warning code quality across all JavaScript files.
+  - `prettier` (`3.9.9`): zero-dependency code formatter.
+  - `typescript` (`7.0.2`): strictly typechecks JSDoc annotations via `tsc -p jsconfig.json`.
+    None of these tools or their transitive dependencies are included in user installations.
+    See [SECURITY.md](SECURITY.md) to report a vulnerability.
