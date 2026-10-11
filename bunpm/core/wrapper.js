@@ -124,7 +124,14 @@ async function main(invokedAs = process.argv[2], args = process.argv.slice(3)) {
     if (invokedAs === 'doctor' && !args.length)
       return doctor({ spawn: spawnCommand });
     const mapped = mapCommand(invokedAs, args);
-    const bun = mapped.fallbackTo ? null : detector.getBunPath();
+    // Yarn Berry Plug'n'Play repos (.pnp.cjs or .pnp.js) require native Yarn;
+    // running through Bun would generate an incompatible node_modules tree.
+    // ponytail: check cwd only; parent workspace roots use Yarn's own discovery.
+    const isYarnPnp =
+      invokedAs === 'yarn' &&
+      (fs.existsSync(path.join(process.cwd(), '.pnp.cjs')) ||
+        fs.existsSync(path.join(process.cwd(), '.pnp.js')));
+    const bun = mapped.fallbackTo || isYarnPnp ? null : detector.getBunPath();
     const original = () => {
       const binary = detector.locateBinary(invokedAs);
       if (!binary) {

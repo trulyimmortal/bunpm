@@ -251,3 +251,21 @@ test('missing Bun falls back and pre-execution permission failure retries exactl
   assert.equal(await main('npm', ['install']), 1);
   assert.equal(spawn.mock.callCount(), 1);
 });
+
+test('Yarn Berry PnP project (.pnp.cjs or .pnp.js) falls back to native yarn', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bunpm-pnp-'));
+  const savedCwd = process.cwd();
+  try {
+    fs.writeFileSync(path.join(dir, '.pnp.cjs'), '');
+    process.chdir(dir);
+    mock(detector, 'getBunPath', () => process.execPath);
+    mock(detector, 'locateBinary', () => process.execPath);
+    const sync = mock(cp, 'spawnSync', () => ({ status: 42 }));
+    assert.equal(await main('yarn', ['install']), 42);
+    assert.equal(sync.mock.callCount(), 1);
+    assert.deepEqual(sync.mock.calls[0].arguments[1], ['install']);
+  } finally {
+    process.chdir(savedCwd);
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

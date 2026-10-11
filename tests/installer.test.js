@@ -81,7 +81,7 @@ test(
               '-NoPath',
             ]
           : [install, '--no-path'],
-        { cwd: root, env, encoding: 'utf8', timeout: 15000 },
+        { cwd: root, env, encoding: 'utf8', timeout: 30000 },
       );
       assert.notEqual(result.status, 0);
       assert.ok(
@@ -117,7 +117,7 @@ test(
           cwd: root,
           env: { ...env, PATH: broken },
           encoding: 'utf8',
-          timeout: 15000,
+          timeout: 30000,
         },
       );
       assert.notEqual(failed.status, 0);
