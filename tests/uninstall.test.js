@@ -75,7 +75,7 @@ test(
       assert.ok(fs.lstatSync(path.join(home, '.zshrc')).isSymbolicLink());
       assert.equal(
         fs.readFileSync(target, 'utf8'),
-        `export KEEP=1\n\nalias ll='ls -l'\n`,
+        `export KEEP=1\nalias ll='ls -l'\n`,
       );
       assert.equal(
         fs.readFileSync(profile, 'utf8'),

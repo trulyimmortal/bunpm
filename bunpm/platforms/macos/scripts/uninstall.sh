@@ -10,11 +10,36 @@ if [ "${1:-}" != '--no-path' ]; then
     TMP_FILE="$(mktemp)"
     trap 'rm -f "$TMP_FILE"' EXIT
     # Remove only our marked exact line, including the legacy absolute spelling.
+    # Drop one empty line immediately preceding the marker if present.
     BUNPM_OLD="export PATH=\"$INSTALL_DIR/bin:\$PATH\"" awk '
-      $0 == "# Added by bunpm installer" { if (marker) print marker; marker=$0; next }
-      marker { if ($0 != "export PATH=\"$HOME/.bunpm/bin:$PATH\"" && $0 != ENVIRON["BUNPM_OLD"]) { print marker; print } marker=""; next }
-      { print }
-      END { if (marker) print marker }
+      $0 == "# Added by bunpm installer" {
+        if (marker) { if (has_prev) print prev; print marker; has_prev=0 }
+        marker = $0
+        skip_prev = (has_prev && prev == "")
+        next
+      }
+      marker {
+        if ($0 != "export PATH=\"$HOME/.bunpm/bin:$PATH\"" && $0 != ENVIRON["BUNPM_OLD"]) {
+          if (has_prev) print prev
+          print marker
+          print
+          has_prev = 0
+        } else if (skip_prev) {
+          has_prev = 0
+        }
+        marker = ""
+        skip_prev = 0
+        next
+      }
+      {
+        if (has_prev) { if (!skip_prev) print prev; skip_prev = 0 }
+        prev = $0
+        has_prev = 1
+      }
+      END {
+        if (has_prev && (marker || !skip_prev)) print prev
+        if (marker) print marker
+      }
     ' "$profile" > "$TMP_FILE"
     cat "$TMP_FILE" > "$profile"
     rm -f "$TMP_FILE"
