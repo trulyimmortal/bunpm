@@ -182,9 +182,11 @@ async function main(invokedAs = process.argv[2], args = process.argv.slice(3)) {
       };
       /** @type {Error | undefined} */
       let failure;
-      child.on('spawn', () => (started = true));
+      child.on('spawn', () => {
+        started = true;
+      });
       // An error after 'spawn' must never trigger a second manager.
-      child.on('error', (error) =>
+      child.on('error', (/** @type {Error} */ error) =>
         started
           ? (failure = error)
           : done({ error, status: null, signal: null }),
@@ -192,8 +194,12 @@ async function main(invokedAs = process.argv[2], args = process.argv.slice(3)) {
       formatStream(child.stdout, (text) => process.stdout.write(text), context);
       formatStream(child.stderr, (text) => process.stderr.write(text), context);
       // 'close' fires after exit and after both pipes ended (and were written).
-      child.on('close', (status, signal) =>
-        done({ error: failure, status, signal }),
+      child.on(
+        'close',
+        (
+          /** @type {number | null} */ status,
+          /** @type {NodeJS.Signals | null} */ signal,
+        ) => done({ error: failure, status, signal }),
       );
     });
     // Only a child that never started may be retried with the original manager.
