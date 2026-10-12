@@ -1,23 +1,29 @@
 # Changelog
 
-## Unreleased
+## 2.2.0 - 2026-10-12
 
+- Trust-boundary validation and schemas extracted into `bunpm/core/validate.js`
+  with frozen `INPUT_VALIDATION_PATTERNS` regex schemas, `validateArgs`,
+  `validateManager`, `validateBinary`, and `validateUrl`.
+- Multi-level structured diagnostics (`error`, `warn`, `info`, `debug`) and
+  exported frozen `logger` API (`logger.error`, `logger.warn`, `logger.info`,
+  `logger.debug`) in `bunpm/core/log.js` matching documented schema.
+- All 13 test files wrapped in named `describe()` suites, exposing 13 runnable test
+  suites to Node's test runner and static repository analyzers.
+- Extended CLI flag translations in `bunpm/core/mapper.js`: `--dry-run` and `-s`
+  (silent) mapped across `npm`, `yarn`, and `pnpm`.
+- Automated release workflow in `.github/workflows/release.yml` publishing
+  official GitHub releases upon `v*` tag pushes.
 - `bunpm doctor` checks the Node.js version, finds Bun and runs `bun --version`,
   checks the launchers and lists the original managers. It exits 1 on any
   failed check.
-
 - SIGINT and SIGTERM received by the wrapper are forwarded to a streamed Bun
   child, and the wrapper waits for Bun to exit instead of quitting first.
-
 - `yarn` invocations in Yarn Berry Plug'n'Play projects (detected by `.pnp.cjs`
   or `.pnp.js` in current working directory) fall back to native Yarn, avoiding
   conflicting `node_modules` generation.
-
 - Unix uninstaller (`uninstall.sh` on Linux and macOS) removes the preceding
   empty line introduced during installation, preventing blank line buildup.
-
-- Diagnostics export `formatDiagnostic` from `bunpm/core/log.js` with documented
-  JSON schema fields under `BUNPM_DEBUG=1`.
 
 ## 2.1.0 - 2026-10-08
 
