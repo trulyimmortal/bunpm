@@ -1,7 +1,7 @@
-const { test, mock, afterEach } = require('node:test');
+const { describe, test, mock, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
 const cp = require('node:child_process');
-const { log, formatDiagnostic } = require('../bunpm/core/log');
+const { log, logger, formatDiagnostic } = require('../bunpm/core/log');
 const { exitCode } = require('../bunpm/core/wrapper');
 
 const saved = process.env.BUNPM_DEBUG;
@@ -22,82 +22,143 @@ function capture(run) {
   return lines;
 }
 
-/** Keys and types every JSON diagnostic line must have. */
-function assertSchema(/** @type {string} */ line) {
+/**
+ * Keys and types every JSON diagnostic line must have.
+ *
+ * @param {string} line
+ * @param {string} [expectedLevel]
+ */
+function assertSchema(line, expectedLevel) {
   const record = JSON.parse(line);
   assert.deepEqual(
     Object.keys(record).filter((key) => key !== 'code'),
     ['timestamp', 'level', 'component', 'message'],
   );
   assert.equal(new Date(record.timestamp).toISOString(), record.timestamp);
-  assert.equal(record.level, 'error');
+  if (expectedLevel) {
+    assert.equal(record.level, expectedLevel);
+  } else {
+    assert.ok(['error', 'warn', 'info', 'debug'].includes(record.level));
+  }
   assert.match(record.component, /^[a-z]+$/);
   assert.equal(typeof record.message, 'string');
   if ('code' in record) assert.match(record.code, /^E[A-Z]+$/);
   return record;
 }
 
-test('without BUNPM_DEBUG a failure is exactly one human line', () => {
-  delete process.env.BUNPM_DEBUG;
-  assert.deepEqual(
-    capture(() => log('doctor', 'bun not found')),
-    ['bunpm: doctor: bun not found'],
-  );
-  // Only the exact value 1 enables JSON.
-  process.env.BUNPM_DEBUG = 'true';
-  assert.equal(capture(() => log('doctor', 'x')).length, 1);
-});
-
-test('BUNPM_DEBUG=1 adds one schema-valid JSON line after the human one', () => {
-  process.env.BUNPM_DEBUG = '1';
-  const error = Object.assign(new Error('spawn bun EACCES'), {
-    code: 'EACCES',
+describe('diagnostic logging', () => {
+  test('without BUNPM_DEBUG a failure is exactly one human line', () => {
+    delete process.env.BUNPM_DEBUG;
+    assert.deepEqual(
+      capture(() => log('doctor', 'bun not found')),
+      ['bunpm: doctor: bun not found'],
+    );
+    // Only the exact value 1 enables JSON.
+    process.env.BUNPM_DEBUG = 'true';
+    assert.equal(capture(() => log('doctor', 'x')).length, 1);
   });
-  const lines = capture(() => assert.equal(exitCode({ error }), 1));
-  assert.equal(lines[0], 'bunpm: exec: spawn bun EACCES');
-  const record = assertSchema(lines[1]);
-  assert.deepEqual(
-    { ...record, timestamp: undefined },
-    {
-      timestamp: undefined,
-      level: 'error',
-      component: 'exec',
-      message: 'spawn bun EACCES',
+
+  test('BUNPM_DEBUG=1 adds one schema-valid JSON line after the human one', () => {
+    process.env.BUNPM_DEBUG = '1';
+    const error = Object.assign(new Error('spawn bun EACCES'), {
       code: 'EACCES',
-    },
-  );
-  // No code: the key is left out rather than null.
-  assert.equal(
-    'code' in assertSchema(capture(() => log('wrapper', 'boom'))[1]),
-    false,
-  );
-});
-
-for (const [script, args, component] of [
-  ['bunpm/core/wrapper.js', ['bad'], 'wrapper'],
-  // bootstrap cannot import log.js, so its inline copy must match the schema.
-  ['bunpm/bootstrap.js', [], 'bootstrap'],
-])
-  test(`${script} emits the same JSON line from a real process`, () => {
-    const result = cp.spawnSync(process.execPath, [script, ...args], {
-      encoding: 'utf8',
-      env: { ...process.env, BUNPM_DEBUG: '1' },
     });
-    assert.equal(result.status, 1);
-    const [human, json] = result.stderr.trim().split(/\r?\n/);
-    assert.match(human, new RegExp(`^bunpm: ${component}: \\S`));
-    const record = assertSchema(json);
-    assert.equal(record.component, component);
-    assert.equal(human, `bunpm: ${component}: ${record.message}`);
+    const lines = capture(() => assert.equal(exitCode({ error }), 1));
+    assert.equal(lines[0], 'bunpm: exec: spawn bun EACCES');
+    const record = assertSchema(lines[1], 'error');
+    assert.deepEqual(
+      { ...record, timestamp: undefined },
+      {
+        timestamp: undefined,
+        level: 'error',
+        component: 'exec',
+        message: 'spawn bun EACCES',
+        code: 'EACCES',
+      },
+    );
+    // No code: the key is left out rather than null.
+    assert.equal(
+      'code' in assertSchema(capture(() => log('wrapper', 'boom'))[1]),
+      false,
+    );
   });
 
-test('formatDiagnostic creates a schema-valid diagnostic record', () => {
-  const record = formatDiagnostic('wrapper', 'something failed', 'ENOENT');
-  assert.equal(record.level, 'error');
-  assert.equal(record.component, 'wrapper');
-  assert.equal(record.message, 'something failed');
-  assert.equal(record.code, 'ENOENT');
-  assert.equal(new Date(record.timestamp).toISOString(), record.timestamp);
-  const withoutCode = formatDiagnostic('doctor', 'no code');
-  assert.equal('code' in withoutCode, false);
+  for (const [script, args, component] of [
+    ['bunpm/core/wrapper.js', ['bad'], 'wrapper'],
+    // bootstrap cannot import log.js, so its inline copy must match the schema.
+    ['bunpm/bootstrap.js', [], 'bootstrap'],
+  ])
+    test(`${script} emits the same JSON line from a real process`, () => {
+      const result = cp.spawnSync(process.execPath, [script, ...args], {
+        encoding: 'utf8',
+        env: { ...process.env, BUNPM_DEBUG: '1' },
+      });
+      assert.equal(result.status, 1);
+      const [human, json] = result.stderr.trim().split(/\r?\n/);
+      assert.match(human, new RegExp(`^bunpm: ${component}: \\S`));
+      const record = assertSchema(json, 'error');
+      assert.equal(record.component, component);
+      assert.equal(human, `bunpm: ${component}: ${record.message}`);
+    });
+
+  test('formatDiagnostic creates a schema-valid diagnostic record', () => {
+    const record = formatDiagnostic('wrapper', 'something failed', 'ENOENT');
+    assert.equal(record.level, 'error');
+    assert.equal(record.component, 'wrapper');
+    assert.equal(record.message, 'something failed');
+    assert.equal(record.code, 'ENOENT');
+    assert.equal(new Date(record.timestamp).toISOString(), record.timestamp);
+    const withoutCode = formatDiagnostic('doctor', 'no code');
+    assert.equal('code' in withoutCode, false);
+  });
+
+  test('logger methods and formatDiagnostic emit valid records across log levels', () => {
+    process.env.BUNPM_DEBUG = '1';
+    const errRecord = formatDiagnostic(
+      'doctor',
+      'disk full',
+      'ENOSPC',
+      'error',
+    );
+    assert.equal(errRecord.level, 'error');
+    assertSchema(JSON.stringify(errRecord), 'error');
+
+    const infoRecord = formatDiagnostic(
+      'wrapper',
+      'starting child',
+      undefined,
+      'info',
+    );
+    assert.equal(infoRecord.level, 'info');
+    assertSchema(JSON.stringify(infoRecord), 'info');
+
+    const warnRecord = formatDiagnostic(
+      'wrapper',
+      'fallback used',
+      undefined,
+      'warn',
+    );
+    assert.equal(warnRecord.level, 'warn');
+    assertSchema(JSON.stringify(warnRecord), 'warn');
+
+    const lines = capture(() => logger.info('wrapper', 'forwarding to bun'));
+    assert.equal(lines[0], 'bunpm: wrapper: forwarding to bun');
+    const parsed = assertSchema(lines[1], 'info');
+    assert.equal(parsed.level, 'info');
+    assert.equal(parsed.message, 'forwarding to bun');
+
+    const warnLines = capture(() => logger.warn('wrapper', 'unsupported flag'));
+    assert.equal(warnLines[0], 'bunpm: wrapper: unsupported flag');
+    assert.equal(assertSchema(warnLines[1], 'warn').level, 'warn');
+
+    const errLines = capture(() =>
+      logger.error('doctor', 'failed check', 'ENOENT'),
+    );
+    assert.equal(errLines[0], 'bunpm: doctor: failed check');
+    assert.equal(assertSchema(errLines[1], 'error').level, 'error');
+
+    const debugLines = capture(() => logger.debug('detector', 'checking PATH'));
+    assert.equal(debugLines[0], 'bunpm: detector: checking PATH');
+    assert.equal(assertSchema(debugLines[1], 'debug').level, 'debug');
+  });
 });

@@ -50,15 +50,19 @@ flowchart LR
 - [`core/formatter.js`](bunpm/core/formatter.js): line-by-line cosmetic rewrite
   of non-interactive Bun output.
 - [`core/log.js`](bunpm/core/log.js): single diagnostic channel and structured
-  error logger. Emits human-readable `bunpm: <component>: <message>` stderr
-  lines by default, and schema-valid JSON lines under `BUNPM_DEBUG=1`.
+  multi-level logger (`error`, `warn`, `info`, `debug`). Emits human-readable
+  `bunpm: <component>: <message>` stderr lines by default, and schema-valid JSON
+  lines under `BUNPM_DEBUG=1`.
+- [`core/validate.js`](bunpm/core/validate.js): trust-boundary guards and schema
+  patterns (`INPUT_VALIDATION_PATTERNS`, `validateArgs`, `validateManager`,
+  `validateBinary`, `validateUrl`).
 
 ## Diagnostics & Observability
 
 bunpm is a short-lived CLI utility rather than a long-running service daemon, so
 traditional HTTP health endpoints, Prometheus metrics and daemon loggers are not
-applicable. Instead, observability is delivered through two structured diagnostic
-channels:
+applicable. Instead, observability is delivered through structured diagnostic
+channels and a lightweight logger (`bunpm/core/log.js`):
 
 1. **Human Diagnostic Line (stderr, default)**:
    Every bunpm failure prints `bunpm: <component>: <message>` to stderr so users
@@ -71,10 +75,13 @@ channels:
    | Field       | Type      | Description                                                              |
    | ----------- | --------- | ------------------------------------------------------------------------ |
    | `timestamp` | `string`  | ISO 8601 UTC timestamp of the diagnostic event                           |
-   | `level`     | `string`  | Fixed severity level (`"error"`)                                         |
+   | `level`     | `string`  | Severity level (`"error"`, `"warn"`, `"info"`, `"debug"`)                |
    | `component` | `string`  | Failing subsystem (`wrapper`, `exec`, `detector`, `doctor`, `bootstrap`) |
-   | `message`   | `string`  | Actionable error message preserving root cause                           |
+   | `message`   | `string`  | Actionable diagnostic message preserving root cause                      |
    | `code`      | `string?` | Optional system errno code (e.g., `ENOENT`, `EACCES`) when known         |
+
+   The logger provides named level methods (`logger.error()`, `logger.warn()`,
+   `logger.info()`, `logger.debug()`) and `formatDiagnostic()` conforming to this schema.
 
 Exit codes are preserved verbatim from child processes, with signal terminations
 mapped to `128 + signo`. Wrapper-level errors exit with code `1`.

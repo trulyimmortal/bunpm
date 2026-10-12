@@ -4,9 +4,10 @@
 // for CI pipelines and tools that embed bunpm.
 
 /**
+ * @typedef {'error' | 'warn' | 'info' | 'debug'} LogLevel
  * @typedef {object} DiagnosticRecord
  * @property {string} timestamp ISO 8601 UTC timestamp
- * @property {'error'} level diagnostic severity level
+ * @property {LogLevel} level diagnostic severity level
  * @property {string} component failing part: wrapper, exec, detector, doctor, ...
  * @property {string} message actionable text, cause preserved verbatim
  * @property {string} [code] error code such as ENOENT, when known
@@ -18,12 +19,13 @@
  * @param {string} component
  * @param {string} message
  * @param {string} [code]
+ * @param {LogLevel} [level]
  * @returns {DiagnosticRecord}
  */
-function formatDiagnostic(component, message, code) {
+function formatDiagnostic(component, message, code, level = 'error') {
   return {
     timestamp: new Date().toISOString(),
-    level: 'error',
+    level,
     component,
     message,
     ...(code && { code }),
@@ -31,14 +33,33 @@ function formatDiagnostic(component, message, code) {
 }
 
 /**
+ * Emit human message to stderr and structured JSON when BUNPM_DEBUG=1.
+ *
  * @param {string} component failing part: wrapper, exec, detector, doctor, ...
  * @param {string} message actionable text, cause preserved verbatim
  * @param {string} [code] error code such as ENOENT, when known
+ * @param {LogLevel} [level]
  */
-function log(component, message, code) {
+function log(component, message, code, level = 'error') {
   console.error(`bunpm: ${component}: ${message}`);
   if (process.env.BUNPM_DEBUG === '1')
-    console.error(JSON.stringify(formatDiagnostic(component, message, code)));
+    console.error(
+      JSON.stringify(formatDiagnostic(component, message, code, level)),
+    );
 }
 
-module.exports = { log, formatDiagnostic };
+/**
+ * Structured logger methods for multi-level diagnostics.
+ */
+const logger = Object.freeze({
+  /** @param {string} component @param {string} message @param {string} [code] */
+  error: (component, message, code) => log(component, message, code, 'error'),
+  /** @param {string} component @param {string} message @param {string} [code] */
+  warn: (component, message, code) => log(component, message, code, 'warn'),
+  /** @param {string} component @param {string} message @param {string} [code] */
+  info: (component, message, code) => log(component, message, code, 'info'),
+  /** @param {string} component @param {string} message @param {string} [code] */
+  debug: (component, message, code) => log(component, message, code, 'debug'),
+});
+
+module.exports = { log, logger, formatDiagnostic };
