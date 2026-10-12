@@ -28,6 +28,7 @@ function filesFor(platform) {
     'log.js',
     'mapper.js',
     'formatter.js',
+    'validate.js',
     'wrapper.js',
   ].map((file) => `core/${file}`);
   for (const name of ['npm', 'npx', 'yarn', 'pnpm']) {

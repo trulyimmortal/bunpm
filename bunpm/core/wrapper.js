@@ -5,7 +5,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const detector = require('./detector');
-const { mapCommand, validateArgs } = require('./mapper');
+const { mapCommand } = require('./mapper');
+const { validateArgs, validateBinary } = require('./validate');
 const { formatStream } = require('./formatter');
 const { doctor } = require('./doctor');
 const { log: diagnose } = require('./log');
@@ -28,13 +29,8 @@ const { log: diagnose } = require('./log');
  * @returns {[string, string[], T & { shell: false, windowsVerbatimArguments?: boolean }]}
  */
 function resolveSpawn(binary, args, options) {
+  validateBinary(binary);
   validateArgs(args);
-  if (
-    typeof binary !== 'string' ||
-    !path.isAbsolute(binary) ||
-    binary.includes('\0')
-  )
-    throw new TypeError('Expected an absolute executable path');
   if (process.platform === 'win32' && /\.(cmd|bat)$/i.test(binary)) {
     const dir = path.dirname(binary);
     const name = path.basename(binary, path.extname(binary)).toLowerCase();

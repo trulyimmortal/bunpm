@@ -1,4 +1,4 @@
-// Only translate the common subset; unknown commands/options stay native.
+const { validateArgs, validateManager } = require('./validate');
 
 /**
  * @typedef {'npm'|'npx'|'yarn'|'pnpm'} Manager
@@ -95,18 +95,6 @@ const PNPM_TO_BUN = {
   dlx: 'x',
 };
 
-/** @param {unknown} args */
-function validateArgs(args) {
-  if (
-    !Array.isArray(args) ||
-    args.some((arg) => typeof arg !== 'string' || arg.includes('\0'))
-  ) {
-    throw new TypeError(
-      'Arguments must be an array of strings without NUL bytes',
-    );
-  }
-}
-
 /**
  * @param {string[]} args
  * @param {Record<string, string>} flagMap
@@ -148,9 +136,7 @@ function hasNonFlagArgs(args) {
  * @returns {Mapping}
  */
 function mapCommand(invokedAs, args) {
-  if (!['npm', 'npx', 'yarn', 'pnpm'].includes(invokedAs)) {
-    throw new TypeError('Expected one of: npm, npx, yarn, pnpm');
-  }
+  validateManager(invokedAs);
   validateArgs(args);
   /** @type {Fallback} */
   const fallback = {
@@ -252,6 +238,7 @@ function mapCommand(invokedAs, args) {
 module.exports = {
   mapCommand,
   validateArgs,
+  validateManager,
   translateFlags,
   hasNonFlagArgs,
 };
