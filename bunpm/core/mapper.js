@@ -28,6 +28,8 @@ const NPM_FLAG_MAP = {
   '-q': '--silent',
   '--ignore-scripts': '--ignore-scripts',
   '--frozen-lockfile': '--frozen-lockfile',
+  '--dry-run': '--dry-run',
+  '-s': '--silent',
 };
 /** @type {Record<string, string>} */
 const YARN_FLAG_MAP = {
@@ -36,6 +38,8 @@ const YARN_FLAG_MAP = {
   '--exact': '-E',
   '-E': '-E',
   '--frozen-lockfile': '--frozen-lockfile',
+  '--dry-run': '--dry-run',
+  '-s': '--silent',
   '--silent': '--silent',
   '--verbose': '--verbose',
   '--ignore-scripts': '--ignore-scripts',
