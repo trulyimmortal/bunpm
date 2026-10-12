@@ -97,10 +97,10 @@ logger (`logger.error`, `warn`, `info`, `debug`) in `bunpm/core/log.js` and upda
 `ARCHITECTURE.md`; wrapped all 13 test files in named `describe()` suites, exposing
 13 detected suites to eliminate the "No test suite detected" flag; added `--dry-run`
 and `-s` CLI flag mappings in `bunpm/core/mapper.js`; added automated GitHub Release
-workflow `.github/workflows/release.yml`; bumped version to 2.2.0.
+workflow `.github/workflows/release.yml`; bumped version to 2.2.0; fixed IDE ChildProcess
+event overload typing in `bunpm/core/wrapper.js` by dropping redundant JSDoc cast.
 
 ## Next
 
-- Push commit, create and push `v2.2.0` tag via ruleset bypass.
 - Re-scan on DataFactor; observe score jump across Architecture, Security Hygiene,
   Test Coverage, CI/CD, and History & Maintenance toward 85+ (Grade A).

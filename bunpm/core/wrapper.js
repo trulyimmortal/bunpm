@@ -158,9 +158,7 @@ async function main(invokedAs = process.argv[2], args = process.argv.slice(3)) {
     let started = false;
     /** @type {Pick<SpawnResult, 'error' | 'signal' | 'status'>} */
     const result = await new Promise((resolve) => {
-      const child = /** @type {import('node:child_process').ChildProcess} */ (
-        cp.spawn(file, argv, options)
-      );
+      const child = cp.spawn(file, argv, options);
       // Forward Ctrl+C and termination to Bun, and keep the wrapper alive until
       // Bun exits, so its last output and exit status are not lost and a
       // SIGTERM sent only to the wrapper cannot orphan the install.
