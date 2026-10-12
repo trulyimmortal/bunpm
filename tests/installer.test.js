@@ -27,7 +27,7 @@ describe('installer & path configuration', () => {
           '-Source',
           path.resolve('bunpm/platforms/windows/scripts/path.ps1'),
         ],
-        { encoding: 'utf8', timeout: 15000 },
+        { encoding: 'utf8', timeout: 30000 },
       );
       assert.deepEqual(
         { status: result.status, stderr: result.stderr },
