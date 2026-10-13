@@ -31,10 +31,14 @@ function capture(run) {
 function assertSchema(line, expectedLevel) {
   const record = JSON.parse(line);
   assert.deepEqual(
-    Object.keys(record).filter((key) => key !== 'code'),
-    ['timestamp', 'level', 'component', 'message'],
+    Object.keys(record)
+      .filter((key) => key !== 'code')
+      .sort(),
+    ['component', 'level', 'message', 'scope', 'timestamp', 'ts'].sort(),
   );
-  assert.equal(new Date(record.timestamp).toISOString(), record.timestamp);
+  assert.equal(new Date(record.ts).toISOString(), record.ts);
+  assert.equal(record.timestamp, record.ts);
+  assert.equal(record.scope, record.component);
   if (expectedLevel) {
     assert.equal(record.level, expectedLevel);
   } else {
@@ -67,10 +71,12 @@ describe('diagnostic logging', () => {
     assert.equal(lines[0], 'bunpm: exec: spawn bun EACCES');
     const record = assertSchema(lines[1], 'error');
     assert.deepEqual(
-      { ...record, timestamp: undefined },
+      { ...record, timestamp: undefined, ts: undefined },
       {
+        ts: undefined,
         timestamp: undefined,
         level: 'error',
+        scope: 'exec',
         component: 'exec',
         message: 'spawn bun EACCES',
         code: 'EACCES',
@@ -98,16 +104,19 @@ describe('diagnostic logging', () => {
       assert.match(human, new RegExp(`^bunpm: ${component}: \\S`));
       const record = assertSchema(json, 'error');
       assert.equal(record.component, component);
+      assert.equal(record.scope, component);
       assert.equal(human, `bunpm: ${component}: ${record.message}`);
     });
 
   test('formatDiagnostic creates a schema-valid diagnostic record', () => {
     const record = formatDiagnostic('wrapper', 'something failed', 'ENOENT');
     assert.equal(record.level, 'error');
+    assert.equal(record.scope, 'wrapper');
     assert.equal(record.component, 'wrapper');
     assert.equal(record.message, 'something failed');
     assert.equal(record.code, 'ENOENT');
-    assert.equal(new Date(record.timestamp).toISOString(), record.timestamp);
+    assert.equal(new Date(record.ts).toISOString(), record.ts);
+    assert.equal(record.timestamp, record.ts);
     const withoutCode = formatDiagnostic('doctor', 'no code');
     assert.equal('code' in withoutCode, false);
   });

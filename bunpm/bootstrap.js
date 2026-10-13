@@ -216,15 +216,19 @@ if (require.main === module)
     // Same format as core/log.js, spelled out here because bootstrap must not
     // import files it has not downloaded yet.
     console.error(`bunpm: bootstrap: ${error.message}`);
-    if (process.env.BUNPM_DEBUG === '1')
+    if (process.env.BUNPM_DEBUG === '1') {
+      const ts = new Date().toISOString();
       console.error(
         JSON.stringify({
-          timestamp: new Date().toISOString(),
+          ts,
+          timestamp: ts,
           level: 'error',
+          scope: 'bootstrap',
           component: 'bootstrap',
           message: error.message,
           ...(error.code && { code: error.code }),
         }),
       );
+    }
     process.exitCode = 1;
   });

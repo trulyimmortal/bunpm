@@ -72,16 +72,17 @@ channels and a lightweight logger (`bunpm/core/log.js`):
    When `BUNPM_DEBUG=1` is set in the environment, bunpm emits an additional
    single-line JSON object on stderr for automated CI pipelines and tooling:
 
-   | Field       | Type      | Description                                                              |
-   | ----------- | --------- | ------------------------------------------------------------------------ |
-   | `timestamp` | `string`  | ISO 8601 UTC timestamp of the diagnostic event                           |
-   | `level`     | `string`  | Severity level (`"error"`, `"warn"`, `"info"`, `"debug"`)                |
-   | `component` | `string`  | Failing subsystem (`wrapper`, `exec`, `detector`, `doctor`, `bootstrap`) |
-   | `message`   | `string`  | Actionable diagnostic message preserving root cause                      |
-   | `code`      | `string?` | Optional system errno code (e.g., `ENOENT`, `EACCES`) when known         |
+   | Field                 | Type      | Description                                                              |
+   | --------------------- | --------- | ------------------------------------------------------------------------ |
+   | `ts` (`timestamp`)    | `string`  | ISO 8601 UTC timestamp of the diagnostic event                           |
+   | `scope` (`component`) | `string`  | Failing subsystem (`wrapper`, `exec`, `detector`, `doctor`, `bootstrap`) |
+   | `level`               | `string`  | Severity level (`"error"`, `"warn"`, `"info"`, `"debug"`)                |
+   | `message`             | `string`  | Actionable diagnostic message preserving root cause                      |
+   | `code`                | `string?` | Optional system errno code (e.g., `ENOENT`, `EACCES`) when known         |
 
    The logger provides named level methods (`logger.error()`, `logger.warn()`,
-   `logger.info()`, `logger.debug()`) and `formatDiagnostic()` conforming to this schema.
+   `logger.info()`, `logger.debug()`) and `formatDiagnostic()` conforming to this schema
+   with `ts`, `scope`, `message`, and `code`.
 
 Exit codes are preserved verbatim from child processes, with signal terminations
 mapped to `128 + signo`. Wrapper-level errors exit with code `1`.

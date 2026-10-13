@@ -6,9 +6,11 @@
 /**
  * @typedef {'error' | 'warn' | 'info' | 'debug'} LogLevel
  * @typedef {object} DiagnosticRecord
- * @property {string} timestamp ISO 8601 UTC timestamp
+ * @property {string} ts ISO 8601 UTC timestamp
+ * @property {string} timestamp ISO 8601 UTC timestamp (alias)
  * @property {LogLevel} level diagnostic severity level
- * @property {string} component failing part: wrapper, exec, detector, doctor, ...
+ * @property {string} scope failing part: wrapper, exec, detector, doctor, ...
+ * @property {string} component failing part (alias)
  * @property {string} message actionable text, cause preserved verbatim
  * @property {string} [code] error code such as ENOENT, when known
  */
@@ -23,9 +25,12 @@
  * @returns {DiagnosticRecord}
  */
 function formatDiagnostic(component, message, code, level = 'error') {
+  const ts = new Date().toISOString();
   return {
-    timestamp: new Date().toISOString(),
+    ts,
+    timestamp: ts,
     level,
+    scope: component,
     component,
     message,
     ...(code && { code }),
