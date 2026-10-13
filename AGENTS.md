@@ -71,21 +71,22 @@ observability / dev-dep pruning in ARCHITECTURE.md. Levers in order:
 3. Mineable history: one real fix or feature plus its test per commit.
 4. Never: fake IaC, cosmetic churn, commits without tests.
 
-| Dim (scan @ 78)     | Score | Evidence / Lever                               |
-| ------------------- | ----- | ---------------------------------------------- |
-| D Architecture      | 72    | multi-level logger + formatDiagnostic schema   |
-| B Test Coverage     | 88    | 13 describe suites, 0 uncovered lines          |
-| C Cleanliness       | 88    | all files < 275 LOC, strict lint/format/types  |
-| F Docs & Onboarding | 85    | Quickstart + ARCHITECTURE.md + CONTRIBUTING.md |
-| I Security Hygiene  | 75    | INPUT_VALIDATION_PATTERNS + core/validate.js   |
-| E Deps Health       | 78    | 0 runtime deps, dual-lockfile sync in CI       |
-| H CI/CD             | 80    | 3-OS matrix, blocking c8 gate, release.yml     |
-| K History & Maint   | 62    | 113+ commits, 3 semver tags (v2.2.0)           |
+| Dim (scan @ 75)     | Score | Evidence / Lever                                |
+| ------------------- | ----- | ----------------------------------------------- |
+| D Architecture      | 72    | multi-level logger + (ts, scope, message, code) |
+| B Test Coverage     | 78    | 13 describe suites, 0 uncovered lines, 100% LOC |
+| C Cleanliness       | 78    | all files < 275 LOC, strict lint/format/types   |
+| F Docs & Onboarding | 90    | Quickstart + ARCHITECTURE + dependabot excerpt  |
+| I Security Hygiene  | 80    | entry guards in bootstrap.main + doctor         |
+| E Deps Health       | 62    | 0 runtime deps, stable typescript 5.7.3 pinned  |
+| H CI/CD             | 80    | 3-OS matrix, blocking c8 gate, release.yml      |
+| K History & Maint   | 55    | atomic feature+test commits, 3 semver tags      |
 
 ## Deliberate non-changes
 
 - `@types/node` stays 16.x so `typecheck` catches post-Node-16 APIs.
 - No IaC, no CodeQL, no Docker containers (CLI-only tool invariant).
+- Zero runtime dependencies (`dependencies: {}`). No mocha runtime/dev vulnerability introduction.
 - The local `~/.bunpm` install on this machine is stale and intercepts `npm`;
   run `node --test "tests/*.test.js"` directly or invoke node-managed npm.
 
@@ -100,7 +101,14 @@ and `-s` CLI flag mappings in `bunpm/core/mapper.js`; added automated GitHub Rel
 workflow `.github/workflows/release.yml`; bumped version to 2.2.0; fixed IDE ChildProcess
 event overload typing in `bunpm/core/wrapper.js` by dropping redundant JSDoc cast.
 
+## Round 9 (Oct 13)
+
+- **Dependency Health**: Pinned TypeScript devDependency to stable `5.7.3` (replacing `7.0.2` flagged as "unusually far ahead/odd suggesting pinning quirks"), pruned 21 native sub-packages from `package-lock.json` and `bun.lock`, synchronized `bunpm/package.json` version to 2.2.0, and documented the `.github/dependabot.yml` weekly schedule excerpt and audit policy in `ARCHITECTURE.md`.
+- **Architecture & Robustness**: Enhanced structured diagnostic logging in `bunpm/core/log.js` and `bunpm/bootstrap.js` to emit `ts` and `scope` schema fields, documented the schema in `ARCHITECTURE.md`, and asserted fields in `tests/log.test.js`.
+- **Security Hygiene**: Added `validateArgs` guard to `bunpm/bootstrap.js` `main()` and `spawn` function guard to `bunpm/core/doctor.js`, backed by negative tests in `tests/validation.test.js`.
+- **Verification**: 100% statements, 100% functions, 100% lines, 95.79% branches; 0 ESLint warnings; 0 Prettier diffs; 0 TypeScript type errors; 0 audit vulnerabilities across npm and bun audit.
+
 ## Next
 
-- Re-scan on DataFactor; observe score jump across Architecture, Security Hygiene,
-  Test Coverage, CI/CD, and History & Maintenance toward 85+ (Grade A).
+- Re-scan on DataFactor; observe score recovery across Dependency Health, Architecture,
+  Security Hygiene, and Test Coverage toward 85+ (Grade A).

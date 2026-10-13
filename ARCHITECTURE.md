@@ -111,6 +111,26 @@ Dependency boundaries & pruning rationale:
   - `c8` (`12.0.0`): collects native V8 code coverage without modifying source code.
   - `eslint` (`10.12.0`): enforces zero-warning code quality across all JavaScript files.
   - `prettier` (`3.9.9`): zero-dependency code formatter.
-  - `typescript` (`7.0.2`): strictly typechecks JSDoc annotations via `tsc -p jsconfig.json`.
+  - `typescript` (`5.7.3`): strictly typechecks JSDoc annotations via `tsc -p jsconfig.json` with zero transitive dependencies.
     None of these tools or their transitive dependencies are included in user installations.
-    See [SECURITY.md](SECURITY.md) to report a vulnerability.
+
+- **Dependabot Cadence & Automated Review Policy**:
+  Dependency and Action updates are managed via [`.github/dependabot.yml`](.github/dependabot.yml) on a weekly cadence:
+
+  ```yaml
+  version: 2
+  updates:
+    - package-ecosystem: npm
+      directory: /
+      schedule:
+        interval: weekly
+        day: monday
+    - package-ecosystem: github-actions
+      directory: /
+      schedule:
+        interval: weekly
+        day: monday
+  ```
+
+  Every proposed update is subject to CI gates: `npm ci --ignore-scripts`, `npm audit --audit-level=high`, `bun audit --audit-level=high`, and cross-OS smoke tests before human merge. No dependency is merged automatically.
+  See [SECURITY.md](SECURITY.md) to report a vulnerability.

@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+- Pin TypeScript devDependency to stable 5.7.3 and prune 21 extraneous platform
+  packages from `package-lock.json` and `bun.lock`, reducing total lockfile packages.
+- Add structured diagnostic fields `ts` and `scope` to `formatDiagnostic()` and
+  `bootstrap.js` JSON logging, matching documented schema in `ARCHITECTURE.md`.
+- Enforce trust-boundary argument validation at CLI entry points: `validateArgs` in
+  `bunpm/bootstrap.js` `main()` and function guard on `doctor` `options.spawn`.
+- Synchronize `bunpm/package.json` package version to 2.2.0.
+- Document `.github/dependabot.yml` weekly schedule excerpt and automated review
+  policy in `ARCHITECTURE.md`.
+
 ## 2.2.0 - 2026-10-12
 
 - Trust-boundary validation and schemas extracted into `bunpm/core/validate.js`
