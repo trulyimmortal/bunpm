@@ -14,6 +14,8 @@ const {
 const { mapCommand } = require('../bunpm/core/mapper');
 const { spawnCommand } = require('../bunpm/core/wrapper');
 const { locateBinary } = require('../bunpm/core/detector');
+const { doctor } = require('../bunpm/core/doctor');
+const bootstrap = require('../bunpm/bootstrap');
 
 const ARGS = /^Arguments must be an array of strings without NUL bytes$/;
 const sha = 'a'.repeat(40);
@@ -154,5 +156,37 @@ describe('trust-boundary validation', () => {
         name: 'TypeError',
         message: 'Invalid binary name',
       });
+  });
+
+  test('bootstrap entry point rejects malformed arguments arrays', async () => {
+    for (const bad of [null, 'bad', 42, ['\0']]) {
+      assert.throws(() => bootstrap.validateArgs(bad), {
+        name: 'TypeError',
+        message: ARGS,
+      });
+      await assert.rejects(bootstrap.main(bad), {
+        name: 'TypeError',
+        message: ARGS,
+      });
+    }
+    assert.throws(() => bootstrap.validateArgs(undefined), {
+      name: 'TypeError',
+      message: ARGS,
+    });
+  });
+
+  test('doctor entry point rejects invalid spawn parameter', () => {
+    for (const bad of [null, undefined, 123, 'spawn']) {
+      assert.throws(
+        () =>
+          doctor({
+            spawn: /** @type {any} */ (bad),
+          }),
+        {
+          name: 'TypeError',
+          message: 'Expected spawn to be a function',
+        },
+      );
+    }
   });
 });

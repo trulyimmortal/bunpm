@@ -35,6 +35,9 @@ function doctor({
   nodeVersion = process.versions.node,
   binDir = launcherDir(),
 }) {
+  if (typeof spawn !== 'function') {
+    throw new TypeError('Expected spawn to be a function');
+  }
   let healthy = true;
   /** @param {string} message */
   const fail = (message) => {

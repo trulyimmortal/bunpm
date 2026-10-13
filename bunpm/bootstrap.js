@@ -168,7 +168,22 @@ async function download(
   }
 }
 
+/**
+ * @param {unknown} args
+ */
+function validateArgs(args) {
+  if (
+    !Array.isArray(args) ||
+    args.some((arg) => typeof arg !== 'string' || arg.includes('\0'))
+  ) {
+    throw new TypeError(
+      'Arguments must be an array of strings without NUL bytes',
+    );
+  }
+}
+
 async function main(args = process.argv.slice(2)) {
+  validateArgs(args);
   if (
     args.length !== 2 ||
     args[0] !== '--revision' ||
@@ -210,7 +225,14 @@ async function main(args = process.argv.slice(2)) {
   }
 }
 
-module.exports = { detectPlatform, filesFor, validateUrl, download, main };
+module.exports = {
+  detectPlatform,
+  filesFor,
+  validateUrl,
+  download,
+  validateArgs,
+  main,
+};
 if (require.main === module)
   main().catch((error) => {
     // Same format as core/log.js, spelled out here because bootstrap must not
