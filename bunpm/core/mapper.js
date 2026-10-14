@@ -30,6 +30,8 @@ const NPM_FLAG_MAP = {
   '--frozen-lockfile': '--frozen-lockfile',
   '--dry-run': '--dry-run',
   '-s': '--silent',
+  '--prefer-offline': '--prefer-offline',
+  '--prefer-online': '--prefer-online',
 };
 /** @type {Record<string, string>} */
 const YARN_FLAG_MAP = {
@@ -43,6 +45,8 @@ const YARN_FLAG_MAP = {
   '--silent': '--silent',
   '--verbose': '--verbose',
   '--ignore-scripts': '--ignore-scripts',
+  '--prefer-offline': '--prefer-offline',
+  '--prefer-online': '--prefer-online',
 };
 /** @type {Record<string, string>} */
 const PNPM_FLAG_MAP = { ...NPM_FLAG_MAP };

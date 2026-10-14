@@ -120,6 +120,8 @@ describe('package manager translation tables', () => {
         '--frozen-lockfile',
         '--verbose',
         '--dry-run',
+        '--prefer-offline',
+        '--prefer-online',
       ].map((flag) => [
         ['i', flag],
         ['install', flag],
@@ -148,6 +150,8 @@ describe('package manager translation tables', () => {
         ['remove', 'x'],
         ['install', '--frozen-lockfile'],
         ['install', '--dry-run'],
+        ['install', '--prefer-offline'],
+        ['install', '--prefer-online'],
       ].map((args) => [args, args]),
       [
         ['install', '-s'],
