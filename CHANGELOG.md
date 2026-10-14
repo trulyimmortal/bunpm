@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Safely translate benign `--no-fund` and `--no-audit` flags during install across npm, yarn, and pnpm.
 - Map `--prefer-offline` and `--prefer-online` flags to Bun equivalents across npm, yarn, and pnpm.
 - Document trust boundaries in `bunpm/core/validate.js` header, enforce `TypeError` across all boundary validators, and evaluate `INPUT_VALIDATION_PATTERNS` regex schemas directly.
 - Add weekly `schedule` trigger and explicit `pull_request.branches` in `.github/workflows/ci.yml`, preventing PyYAML `NoneType` dictionary access issues in CI analyzers.

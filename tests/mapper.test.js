@@ -99,6 +99,10 @@ describe('package manager translation tables', () => {
         ['i', '--save', 'x'],
         ['add', 'x'],
       ],
+      ...['--no-fund', '--no-audit'].map((flag) => [
+        ['i', flag, 'x'],
+        ['add', 'x'],
+      ]),
       ...['--quiet', '-q', '--silent', '-s'].map((flag) => [
         ['i', flag],
         ['install', '--silent'],
@@ -171,6 +175,10 @@ describe('package manager translation tables', () => {
         ['add', '-D', 'x'],
         ['add', '-d', 'x'],
       ],
+      ...['--no-fund', '--no-audit'].map((flag) => [
+        ['add', flag, 'x'],
+        ['add', 'x'],
+      ]),
     ]);
     assertFallback('yarn', [
       ['add', '--global', 'x'],

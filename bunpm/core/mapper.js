@@ -32,6 +32,8 @@ const NPM_FLAG_MAP = {
   '-s': '--silent',
   '--prefer-offline': '--prefer-offline',
   '--prefer-online': '--prefer-online',
+  '--no-fund': '',
+  '--no-audit': '',
 };
 /** @type {Record<string, string>} */
 const YARN_FLAG_MAP = {
@@ -47,6 +49,8 @@ const YARN_FLAG_MAP = {
   '--ignore-scripts': '--ignore-scripts',
   '--prefer-offline': '--prefer-offline',
   '--prefer-online': '--prefer-online',
+  '--no-fund': '',
+  '--no-audit': '',
 };
 /** @type {Record<string, string>} */
 const PNPM_FLAG_MAP = { ...NPM_FLAG_MAP };
