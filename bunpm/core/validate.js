@@ -1,6 +1,12 @@
-// Input validation and trust-boundary guards for bunpm.
-// Provides schema patterns and named guard functions for CLI inputs,
-// binaries, and network URLs.
+/**
+ * @fileoverview Trust-boundary validation and input guards for bunpm.
+ *
+ * Exported validators and guarded trust boundaries:
+ * - validateArgs(args): Guards argv array boundary (rejects non-arrays, non-strings, NUL bytes).
+ * - validateManager(invokedAs): Guards package manager boundary (npm, npx, yarn, pnpm).
+ * - validateBinary(binary): Guards process execution boundary (absolute executable paths).
+ * - validateUrl(value): Guards remote download HTTPS boundary (raw.githubusercontent.com pin).
+ */
 
 const path = require('node:path');
 
@@ -27,7 +33,11 @@ const INPUT_VALIDATION_PATTERNS = Object.freeze({
 function validateArgs(args) {
   if (
     !Array.isArray(args) ||
-    args.some((arg) => typeof arg !== 'string' || arg.includes('\0'))
+    args.some(
+      (arg) =>
+        typeof arg !== 'string' ||
+        !INPUT_VALIDATION_PATTERNS.safeString.test(arg),
+    )
   ) {
     throw new TypeError(
       'Arguments must be an array of strings without NUL bytes',
@@ -43,6 +53,7 @@ function validateArgs(args) {
 function validateManager(invokedAs) {
   if (
     typeof invokedAs !== 'string' ||
+    !INPUT_VALIDATION_PATTERNS.manager.test(invokedAs) ||
     !VALID_MANAGERS.includes(/** @type {any} */ (invokedAs))
   ) {
     throw new TypeError('Expected one of: npm, npx, yarn, pnpm');
@@ -60,7 +71,7 @@ function validateBinary(binary) {
     typeof binary !== 'string' ||
     !binary ||
     !path.isAbsolute(binary) ||
-    binary.includes('\0')
+    !INPUT_VALIDATION_PATTERNS.safeString.test(binary)
   ) {
     throw new TypeError('Expected an absolute executable path');
   }
@@ -74,7 +85,14 @@ function validateBinary(binary) {
  * @returns {URL}
  */
 function validateUrl(value) {
-  const url = new URL(value);
+  let url;
+  try {
+    url = new URL(value);
+  } catch (err) {
+    throw new TypeError(
+      `Invalid download URL: ${/** @type {Error} */ (err).message}`,
+    );
+  }
   /** @type {[string, boolean][]} */
   const rules = [
     ['HTTPS is required', url.protocol === 'https:'],
@@ -92,7 +110,7 @@ function validateUrl(value) {
     ],
   ];
   const broken = rules.find(([, ok]) => !ok);
-  if (broken) throw new Error(`Unsafe download URL: ${broken[0]}`);
+  if (broken) throw new TypeError(`Unsafe download URL: ${broken[0]}`);
   return url;
 }
 

@@ -9,11 +9,18 @@ separately and put both executables on PATH for the full validation sequence.
 `bun install` provides neither tool. Bash is needed for Unix script checks;
 Windows installer checks require PowerShell.
 
-From a fresh clone:
+From a fresh clone (matching README.md Quickstart verbatim):
 
 ```sh
 git clone https://github.com/yv3000/bunpm.git
 cd bunpm
+npm ci --ignore-scripts
+npm test
+```
+
+Full development validation sequence:
+
+```sh
 bun install --frozen-lockfile --ignore-scripts
 bun run test
 bun run test:coverage

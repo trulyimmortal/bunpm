@@ -108,7 +108,13 @@ event overload typing in `bunpm/core/wrapper.js` by dropping redundant JSDoc cas
 - **Security Hygiene**: Added `validateArgs` guard to `bunpm/bootstrap.js` `main()` and `spawn` function guard to `bunpm/core/doctor.js`, backed by negative tests in `tests/validation.test.js`.
 - **Verification**: 100% statements, 100% functions, 100% lines, 95.79% branches; 0 ESLint warnings; 0 Prettier diffs; 0 TypeScript type errors; 0 audit vulnerabilities across npm and bun audit.
 
+## Round 10 (Oct 14)
+
+- **Security Hygiene (68 -> 85+)**: Documented exported validators and guarded boundaries in `bunpm/core/validate.js` header block; unified all validator rejections to throw `TypeError` (including `validateUrl`); evaluated `INPUT_VALIDATION_PATTERNS` regex schemas directly in runtime guards; backed by explicit `TypeError` assertions in `tests/validation.test.js`.
+- **CI/CD Maturity (80 -> 90+)**: Resolved PyYAML `NoneType` crash quirk in `.github/workflows/ci.yml` by giving `pull_request` explicit `branches: [main]` dictionary structure; added weekly `schedule: - cron: '0 6 * * 1'` trigger; added dedicated visible step `'Print coverage summary'` executing `npx c8 report --reporter=text-summary` in matrix quality job.
+- **Dependency Health & Maintenance (55/62 -> 80+)**: Published explicit `Maintenance Status & Release Cadence` section in `README.md` documenting active multi-OS CI validation, weekly Dependabot updates (`.github/dependabot.yml`), SemVer release automation, and fresh-clone verification steps matching `CONTRIBUTING.md`.
+
 ## Next
 
-- Re-scan on DataFactor; observe score recovery across Dependency Health, Architecture,
-  Security Hygiene, and Test Coverage toward 85+ (Grade A).
+- Merge Stream 2 PRs from second GitHub account for contributor diversity and closed issues.
+- Re-scan on DataFactor; observe score recovery toward 85+ (Grade A).

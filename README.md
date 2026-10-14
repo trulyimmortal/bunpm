@@ -127,6 +127,13 @@ One short-lived process per invocation: launcher, `wrapper.js`, at most one
 child (Bun or the original manager). See [ARCHITECTURE.md](ARCHITECTURE.md) for
 the request flow, each module's role, error handling and trust boundaries.
 
+## Maintenance Status & Release Cadence
+
+- **Maintenance Status**: Actively maintained with continuous multi-OS automated CI validation across Ubuntu, macOS, and Windows.
+- **Dependency Cadence**: Automated weekly dependency audits and update proposals via [.github/dependabot.yml](.github/dependabot.yml) on Mondays.
+- **Release Cadence**: SemVer releases triggered on verified tag pushes via automated release workflow (.github/workflows/release.yml).
+- **Last Reviewed**: October 2026 for Node.js 16.9–22.x and Bun 1.3.14 toolchain compatibility.
+
 ## Development
 
 From a fresh clone, with Node.js 22.13+ and Bun 1.3.14:

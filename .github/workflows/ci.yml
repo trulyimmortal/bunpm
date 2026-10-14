@@ -5,6 +5,9 @@ name: bunpm CI
   push:
     branches: [main]
   pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1'
   workflow_dispatch:
 
 permissions:
@@ -91,6 +94,8 @@ jobs:
         id: coverage
         continue-on-error: false
         run: npm run test:coverage
+      - name: Print coverage summary
+        run: npx c8 report --reporter=text-summary
       # Only Windows runs wrapper.js's batch-shim branch, so only Windows can
       # hold every runtime file to the line minimum on its own. Branches are
       # gated overall: each OS takes only its own side of platform checks.

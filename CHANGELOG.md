@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- Document trust boundaries in `bunpm/core/validate.js` header, enforce `TypeError` across all boundary validators, and evaluate `INPUT_VALIDATION_PATTERNS` regex schemas directly.
+- Add weekly `schedule` trigger and explicit `pull_request.branches` in `.github/workflows/ci.yml`, preventing PyYAML `NoneType` dictionary access issues in CI analyzers.
+- Add visible `Print coverage summary` step in CI workflow matrix quality job.
+- Document Maintenance Status, Dependabot policy, and SemVer release cadence in `README.md` and `CONTRIBUTING.md`.
 - Pin TypeScript devDependency to stable 5.7.3 and prune 21 extraneous platform
   packages from `package-lock.json` and `bun.lock`, reducing total lockfile packages.
 - Add structured diagnostic fields `ts` and `scope` to `formatDiagnostic()` and

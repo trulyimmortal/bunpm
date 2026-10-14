@@ -114,6 +114,7 @@ describe('trust-boundary validation', () => {
       good.replace('https://', 'https://raw.githubusercontent.com.evil.test/'),
     ])
       assert.throws(() => validateUrl(url), {
+        name: 'TypeError',
         message: /^Unsafe download URL: /,
       });
     // Protocol-relative, relative and empty input are not URLs at all.
@@ -188,5 +189,19 @@ describe('trust-boundary validation', () => {
         },
       );
     }
+  });
+
+  test('all exported validators throw TypeError on malformed input boundaries', () => {
+    assert.throws(() => validateArgs(null), { name: 'TypeError' });
+    assert.throws(() => validateArgs(['bad\0']), { name: 'TypeError' });
+    assert.throws(() => validateManager('invalid-mgr'), { name: 'TypeError' });
+    assert.throws(() => validateBinary('relative/path'), { name: 'TypeError' });
+    assert.throws(() => validateBinary(path.resolve('bun') + '\0'), {
+      name: 'TypeError',
+    });
+    assert.throws(() => validateUrl('http://insecure.test'), {
+      name: 'TypeError',
+    });
+    assert.throws(() => validateUrl('not-a-url'), { name: 'TypeError' });
   });
 });
