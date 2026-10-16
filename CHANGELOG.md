@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Preserve another Windows installer's directory when concurrent setup loses
+  the directory-creation race; still roll back this installer's copy failures.
+
 ## 2.3.1 - 2026-10-16
 
 - Annotate trust-boundary validators (`validateArgs`, `validateManager`, `validateBinary`, `validateUrl`) with `@validates` JSDoc tags and export `input_validation_patterns` for static analysis AST discovery.

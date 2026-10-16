@@ -21,8 +21,9 @@ if (-not (Test-Path -LiteralPath (Join-Path $coreRoot 'core'))) {
 foreach ($required in @((Join-Path $coreRoot 'core'), (Join-Path $sourceRoot 'bin'), (Join-Path $PSScriptRoot 'uninstall.ps1'))) {
     if (-not (Test-Path -LiteralPath $required)) { throw "bunpm: install: missing installation source: $required" }
 }
+# Only roll back a directory created by this invocation.
+New-Item -ItemType Directory -Path $installDir | Out-Null
 try {
-    New-Item -ItemType Directory -Path $installDir | Out-Null
     Copy-Item -LiteralPath (Join-Path $coreRoot 'core') -Destination $installDir -Recurse
     Copy-Item -LiteralPath (Join-Path $sourceRoot 'bin') -Destination $installDir -Recurse
     Copy-Item -LiteralPath $PSScriptRoot -Destination (Join-Path $installDir 'scripts') -Recurse

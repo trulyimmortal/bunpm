@@ -12,6 +12,90 @@ const { locateBinary } = require('../bunpm/core/detector');
 const flat = (text) => text.replace(/\s+/g, ' ');
 
 describe('installer & path configuration', () => {
+  for (const competingInstall of [true, false]) {
+    test(
+      competingInstall
+        ? 'Windows installer preserves a directory created after its initial check'
+        : 'Windows installer rolls back its own directory after a copy failure',
+      { skip: process.platform !== 'win32', timeout: 30000 },
+      () => {
+        const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bunpm-rollback-'));
+        try {
+          const home = path.join(root, 'home');
+          const source = path.join(root, 'source');
+          const scripts = path.join(source, 'scripts');
+          const tools = path.join(root, 'tools');
+          for (const dir of [
+            home,
+            scripts,
+            tools,
+            path.join(source, 'core'),
+            path.join(source, 'bin'),
+          ])
+            fs.mkdirSync(dir, { recursive: true });
+          for (const file of ['install.ps1', 'uninstall.ps1'])
+            fs.copyFileSync(
+              path.resolve('bunpm/platforms/windows/scripts', file),
+              path.join(scripts, file),
+            );
+          // Missing package.json fails after the installer has copied directories.
+          // The node shim models another installer winning during prerequisite checks.
+          fs.writeFileSync(
+            path.join(tools, 'node.cmd'),
+            [
+              '@echo off',
+              ...(competingInstall
+                ? [
+                    'mkdir "%USERPROFILE%\\.bunpm"',
+                    '> "%USERPROFILE%\\.bunpm\\sentinel" echo other installer',
+                  ]
+                : []),
+              'exit /b 0',
+              '',
+            ].join('\r\n'),
+          );
+          fs.writeFileSync(path.join(tools, 'bun.cmd'), '@exit /b 0\r\n');
+          const env = { ...process.env, USERPROFILE: home, PATH: tools };
+          for (const key of Object.keys(env)) {
+            if (
+              ['PATH', 'USERPROFILE'].includes(key.toUpperCase()) &&
+              key !== key.toUpperCase()
+            )
+              delete env[key];
+          }
+          const shell = locateBinary('powershell');
+          assert.notEqual(shell, null);
+          const result = cp.spawnSync(
+            shell,
+            [
+              '-NoProfile',
+              '-ExecutionPolicy',
+              'Bypass',
+              '-File',
+              path.join(scripts, 'install.ps1'),
+              '-NoPath',
+            ],
+            { cwd: root, env, encoding: 'utf8', timeout: 15000 },
+          );
+          assert.equal(result.status, 1, result.stderr);
+          const installed = path.join(home, '.bunpm');
+          if (competingInstall) {
+            assert.match(result.stderr, /New-Item/);
+            assert.equal(
+              fs.readFileSync(path.join(installed, 'sentinel'), 'utf8').trim(),
+              'other installer',
+            );
+          } else {
+            assert.match(result.stderr, /package\.json/);
+            assert.equal(fs.existsSync(installed), false);
+          }
+        } finally {
+          fs.rmSync(root, { recursive: true, force: true });
+        }
+      },
+    );
+  }
+
   test(
     'Windows PATH edits preserve raw values without touching the registry',
     { skip: process.platform !== 'win32', timeout: 30000 },
