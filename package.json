@@ -35,6 +35,14 @@
     "audit": "npm audit --audit-level=high && bun audit --audit-level=high",
     "shell:check": "shellcheck bunpm/platforms/linux/scripts/*.sh bunpm/platforms/macos/scripts/*.sh bunpm/platforms/linux/bin/* bunpm/platforms/macos/bin/*"
   },
+  "testConfig": {
+    "framework": "node:test",
+    "coverage": "c8",
+    "configFiles": [
+      ".c8rc.json",
+      "jsconfig.json"
+    ]
+  },
   "devDependencies": {
     "@types/node": "16.18.126",
     "c8": "12.0.0",
