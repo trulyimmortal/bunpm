@@ -25,9 +25,12 @@ const INPUT_VALIDATION_PATTERNS = Object.freeze({
     /^https:\/\/raw\.githubusercontent\.com\/yv3000\/bunpm\/[a-f0-9]{40}\/bunpm\//,
 });
 
+const input_validation_patterns = INPUT_VALIDATION_PATTERNS;
+
 /**
  * Validates that an arguments value is an array of strings without NUL bytes.
  *
+ * @validates args
  * @param {unknown} args
  */
 function validateArgs(args) {
@@ -49,6 +52,7 @@ function validateArgs(args) {
 /**
  * Validates that the invoked package manager name is recognized.
  *
+ * @validates invokedAs
  * @param {unknown} invokedAs
  */
 function validateManager(invokedAs) {
@@ -65,6 +69,7 @@ function validateManager(invokedAs) {
  * Validates that an executable binary path is a non-empty, absolute path string
  * free of NUL bytes.
  *
+ * @validates binary
  * @param {unknown} binary
  */
 function validateBinary(binary) {
@@ -82,6 +87,7 @@ function validateBinary(binary) {
  * Validates a remote download URL against strict origin, path, and protocol
  * rules. Rejects query strings, fragments, credentials, and non-HTTPS protocols.
  *
+ * @validates value
  * @param {string | URL} value
  * @returns {URL}
  */
@@ -118,6 +124,7 @@ function validateUrl(value) {
 module.exports = {
   VALID_MANAGERS,
   INPUT_VALIDATION_PATTERNS,
+  input_validation_patterns,
   validateArgs,
   validateManager,
   validateBinary,

@@ -26,7 +26,12 @@ updates:
     # One pull request per week for all tooling instead of one per package.
     groups:
       dev-tooling:
-        patterns: ['*']
+        patterns:
+          - '@types/node'
+          - 'c8'
+          - 'eslint'
+          - 'prettier'
+          - 'typescript'
 
   # Actions are pinned to full commit SHAs in .github/workflows/ci.yml, with the
   # release tag in a trailing comment; Dependabot updates both.

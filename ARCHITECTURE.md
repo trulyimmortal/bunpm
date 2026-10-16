@@ -89,31 +89,18 @@ mapped to `128 + signo`. Wrapper-level errors exit with code `1`.
 
 ## Boundaries & Dependencies
 
-### Trust boundaries
+### Trust Boundaries
 
-`core/mapper.js:mapCommand` calls `validateManager` and `validateArgs` before
-translation. `core/wrapper.js:resolveSpawn` calls `validateBinary` and
-`validateArgs` before synchronous or asynchronous process creation.
-`core/detector.js:locateBinary` checks binary names before PATH lookup, and
-`core/doctor.js:doctor` checks its injected spawn function.
+bunpm enforces fail-closed validation at all external trust boundaries via [`bunpm/core/validate.js`](bunpm/core/validate.js):
 
-The standalone bootstrap has its own guards: `main` calls `validateArgs`,
-`download` calls `validateUrl` for the initial request and every redirect,
-and checks the original revision throughout. The exported core `validateUrl`
-is tested separately; bootstrap cannot import it before downloads complete.
-Negative cases are covered by `tests/validation.test.js` and
-`tests/bootstrap.test.js`. Executable contents found on PATH are trusted;
-validation of a path does not authenticate the executable.
+| Validator                    | Boundary Guarded                                          | Call Sites                                                                       | Test Coverage                                         |
+| ---------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `validateArgs(args)`         | Argument arrays without NUL bytes                         | `core/mapper.js:mapCommand`, `core/wrapper.js:resolveSpawn`, `bootstrap.js:main` | `tests/validation.test.js`, `tests/bootstrap.test.js` |
+| `validateManager(invokedAs)` | Supported package managers (`npm`, `npx`, `yarn`, `pnpm`) | `core/mapper.js:mapCommand`                                                      | `tests/validation.test.js`                            |
+| `validateBinary(binary)`     | Absolute executable binary paths                          | `core/wrapper.js:resolveSpawn`                                                   | `tests/validation.test.js`                            |
+| `validateUrl(value)`         | Pinned HTTPS download URLs                                | `bootstrap.js:download` (initial & redirects)                                    | `tests/validation.test.js`, `tests/bootstrap.test.js` |
 
-[`bootstrap.js`](bunpm/bootstrap.js) ([Remote Bootstrap](README.md#remote-bootstrap)) and the platform installers run once, by
-hand, and are never imported by the wrapper. Bootstrap imports nothing from
-`core/` because those files are not downloaded yet when it starts.
-
-Trust boundaries: bunpm runs whatever Bun and original managers your absolute
-PATH entries resolve to, without validating them. Only `bootstrap.js` performs
-network I/O, restricted to this repository at one commit SHA; child processes
-reach registries under their own configuration. Installers write only under
-`~/.bunpm`, one shell profile, or Windows User PATH.
+Executable contents found on PATH are trusted once resolved to absolute paths. Only `bootstrap.js` performs remote network I/O, cryptographically restricted to this repository at an exact 40-character commit SHA over TLS. Installers write only under `~/.bunpm`, one shell profile, or Windows User PATH. [`bootstrap.js`](bunpm/bootstrap.js) and platform installers run once by hand and are never imported by the runtime wrapper.
 
 Dependency boundaries & pruning rationale:
 

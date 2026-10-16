@@ -1,6 +1,30 @@
-const { describe, test } = require('node:test');
+const { describe, test, mock: nodeMock, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
-const { mapCommand, translateFlags } = require('../bunpm/core/mapper');
+const fs = require('node:fs');
+const path = require('node:path');
+const os = require('node:os');
+const cp = require('node:child_process');
+const detector = require('../bunpm/core/detector');
+const {
+  mapCommand,
+  translateFlags,
+  hasNonFlagArgs,
+} = require('../bunpm/core/mapper');
+const { main, exitCode } = require('../bunpm/core/wrapper');
+
+const dirs = [];
+const savedPath = process.env.PATH;
+function mock(object, key, implementation) {
+  return nodeMock.method(object, key, implementation);
+}
+
+afterEach(() => {
+  nodeMock.restoreAll();
+  if (savedPath === undefined) delete process.env.PATH;
+  else process.env.PATH = savedPath;
+  for (const dir of dirs.splice(0))
+    fs.rmSync(dir, { recursive: true, force: true });
+});
 
 describe('core command mapping', () => {
   test('maps common dependency operations without mutating input', () => {
@@ -53,7 +77,6 @@ describe('core command mapping', () => {
   });
 
   test('npm options after a script name stay with npm, not the script', () => {
-    // npm consumes these as config; Bun would forward them to the script.
     for (const args of [
       ['test', '--watch'],
       ['start', '--port=3000'],
@@ -65,7 +88,6 @@ describe('core command mapping', () => {
         fallbackArgs: args,
       });
     }
-    // Positional arguments and anything after `--` are forwarded by npm too.
     assert.deepEqual(mapCommand('npm', ['run', 'build', 'src']).bunArgs, [
       'run',
       'build',
@@ -76,12 +98,75 @@ describe('core command mapping', () => {
       'test',
       '--watch',
     ]);
-    // Yarn and pnpm forward options after the script name to the script.
     for (const tool of ['yarn', 'pnpm'])
       assert.deepEqual(mapCommand(tool, ['run', 'build', '--prod']).bunArgs, [
         'run',
         'build',
         '--prod',
       ]);
+  });
+
+  test('translateFlags and hasNonFlagArgs correctly evaluate flag boundaries', () => {
+    assert.equal(hasNonFlagArgs([]), false);
+    assert.equal(hasNonFlagArgs(['-v', '--save-dev']), false);
+    assert.equal(hasNonFlagArgs(['--registry', 'https://example.com']), false);
+    assert.equal(
+      hasNonFlagArgs(['--registry', 'https://example.com', 'react']),
+      true,
+    );
+    assert.equal(hasNonFlagArgs(['pkg']), true);
+    assert.deepEqual(
+      translateFlags(['--save', '--registry=x', '--', '-D', ''], {
+        '--save': '',
+        '--registry': '--registry',
+        '-D': '-d',
+      }),
+      ['--registry=x', '--', '-D', ''],
+    );
+  });
+
+  test('exitCode resolves numeric status and standard POSIX signals', () => {
+    assert.equal(exitCode({ status: 0 }), 0);
+    assert.equal(exitCode({ status: 42 }), 42);
+    assert.equal(exitCode({ status: null, signal: 'SIGHUP' }), 129);
+    assert.equal(exitCode({ status: null, signal: 'SIGINT' }), 130);
+    assert.equal(exitCode({ status: null, signal: 'SIGKILL' }), 137);
+    assert.equal(exitCode({ status: null, signal: 'SIGTERM' }), 143);
+    assert.equal(exitCode({ status: null, signal: 'unknown' }), 129);
+    assert.equal(exitCode({ status: null }), 1);
+  });
+
+  test('Yarn PnP roots and nested workspaces preserve native argv without finding Bun', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bunpm-pnp-'));
+    dirs.push(dir);
+    const savedCwd = process.cwd();
+    try {
+      const nested = path.join(dir, 'packages', 'app');
+      fs.mkdirSync(nested, { recursive: true });
+      const bun = mock(detector, 'getBunPath', () => process.execPath);
+      const original = mock(detector, 'locateBinary', () => process.execPath);
+      const sync = mock(cp, 'spawnSync', () => ({ status: 42 }));
+      const args = ['add', '--dev', 'example'];
+      for (const marker of ['.pnp.cjs', '.pnp.js']) {
+        fs.writeFileSync(path.join(dir, marker), '');
+        for (const cwd of [dir, nested]) {
+          process.chdir(cwd);
+          assert.equal(await main('yarn', args), 42);
+        }
+        fs.unlinkSync(path.join(dir, marker));
+      }
+      assert.equal(bun.mock.callCount(), 0);
+      assert.equal(sync.mock.callCount(), 4);
+      for (const call of sync.mock.calls)
+        assert.deepEqual(call.arguments[1], args);
+      for (const call of original.mock.calls)
+        assert.deepEqual(call.arguments, ['yarn']);
+      assert.equal(await main('yarn', ['run', 'build']), 42);
+      assert.equal(bun.mock.callCount(), 1);
+      assert.equal(original.mock.callCount(), 4);
+      assert.deepEqual(sync.mock.calls[4].arguments[1], ['run', 'build']);
+    } finally {
+      process.chdir(savedCwd);
+    }
   });
 });

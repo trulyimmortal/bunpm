@@ -9,7 +9,7 @@ const { EventEmitter } = require('node:events');
 const { PassThrough } = require('node:stream');
 const { setImmediate } = require('node:timers');
 const detector = require('../bunpm/core/detector');
-const { main, exitCode } = require('../bunpm/core/wrapper');
+const { main } = require('../bunpm/core/wrapper');
 const dirs = [];
 const savedPath = process.env.PATH;
 function mock(object, key, implementation) {
@@ -216,9 +216,6 @@ describe('streamed process execution and signals', () => {
     locate.mock.mockImplementation(() => null);
     assert.equal(await main('npm', ['publish']), 1);
     assert.equal(await main('bad', []), 1);
-    assert.equal(exitCode({ status: null, signal: 'SIGTERM' }), 143);
-    assert.equal(exitCode({ status: null, signal: 'unknown' }), 129);
-    assert.equal(exitCode({ status: null }), 1);
   });
 
   test('missing Bun falls back and pre-execution permission failure retries exactly once', async () => {
@@ -247,40 +244,5 @@ describe('streamed process execution and signals', () => {
     bun.mock.mockImplementation(() => 'relative-bun');
     assert.equal(await main('npm', ['install']), 1);
     assert.equal(spawn.mock.callCount(), 1);
-  });
-
-  test('Yarn PnP roots and nested workspaces preserve native argv without finding Bun', async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bunpm-pnp-'));
-    const savedCwd = process.cwd();
-    try {
-      const nested = path.join(dir, 'packages', 'app');
-      fs.mkdirSync(nested, { recursive: true });
-      const bun = mock(detector, 'getBunPath', () => process.execPath);
-      const original = mock(detector, 'locateBinary', () => process.execPath);
-      const sync = mock(cp, 'spawnSync', () => ({ status: 42 }));
-      const args = ['add', '--dev', 'example'];
-      for (const marker of ['.pnp.cjs', '.pnp.js']) {
-        fs.writeFileSync(path.join(dir, marker), '');
-        for (const cwd of [dir, nested]) {
-          process.chdir(cwd);
-          assert.equal(await main('yarn', args), 42);
-        }
-        fs.unlinkSync(path.join(dir, marker));
-      }
-      assert.equal(bun.mock.callCount(), 0);
-      assert.equal(sync.mock.callCount(), 4);
-      for (const call of sync.mock.calls)
-        assert.deepEqual(call.arguments[1], args);
-      for (const call of original.mock.calls)
-        assert.deepEqual(call.arguments, ['yarn']);
-      // With both markers removed, discovery reaches the root and uses Bun.
-      assert.equal(await main('yarn', ['run', 'build']), 42);
-      assert.equal(bun.mock.callCount(), 1);
-      assert.equal(original.mock.callCount(), 4);
-      assert.deepEqual(sync.mock.calls[4].arguments[1], ['run', 'build']);
-    } finally {
-      process.chdir(savedCwd);
-      fs.rmSync(dir, { recursive: true, force: true });
-    }
   });
 });

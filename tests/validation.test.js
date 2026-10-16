@@ -6,6 +6,7 @@ const path = require('node:path');
 const {
   VALID_MANAGERS,
   INPUT_VALIDATION_PATTERNS,
+  input_validation_patterns,
   validateArgs,
   validateManager,
   validateBinary,
@@ -26,6 +27,7 @@ describe('trust-boundary validation', () => {
     assert.deepEqual(VALID_MANAGERS, ['npm', 'npx', 'yarn', 'pnpm']);
     assert.ok(Object.isFrozen(VALID_MANAGERS));
     assert.ok(Object.isFrozen(INPUT_VALIDATION_PATTERNS));
+    assert.equal(input_validation_patterns, INPUT_VALIDATION_PATTERNS);
     assert.ok(INPUT_VALIDATION_PATTERNS.manager.test('npm'));
     assert.ok(INPUT_VALIDATION_PATTERNS.safeString.test('safe'));
     assert.ok(INPUT_VALIDATION_PATTERNS.commitSha.test(sha));

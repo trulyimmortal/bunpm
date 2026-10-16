@@ -6,11 +6,7 @@ const path = require('node:path');
 const os = require('node:os');
 const detector = require('../bunpm/core/detector');
 const { main, spawnCommand, exitCode } = require('../bunpm/core/wrapper');
-const {
-  mapCommand,
-  translateFlags,
-  hasNonFlagArgs,
-} = require('../bunpm/core/mapper');
+const { mapCommand } = require('../bunpm/core/mapper');
 const dirs = [];
 const savedPath = process.env.PATH;
 const isWin = process.platform === 'win32';
@@ -89,15 +85,6 @@ describe('wrapper entry and native execution', () => {
       '--',
       '-pkg',
     ]);
-    assert.deepEqual(
-      translateFlags(['--save', '--registry=x', '--', '-D', ''], {
-        '--save': '',
-        '--registry': '--registry',
-        '-D': '-d',
-      }),
-      ['--registry=x', '--', '-D', ''],
-    );
-    assert.equal(hasNonFlagArgs(['--registry', 'x', 'pkg']), true);
     assert.deepEqual(mapCommand('npm', ['i']).bunArgs, ['install']);
     for (const args of [null, {}, [3], ['a\0b']])
       assert.throws(() => mapCommand('npm', args), /Arguments/);
