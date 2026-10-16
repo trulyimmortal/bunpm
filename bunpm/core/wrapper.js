@@ -122,11 +122,16 @@ async function main(invokedAs = process.argv[2], args = process.argv.slice(3)) {
     const mapped = mapCommand(invokedAs, args);
     // Yarn Berry Plug'n'Play repos (.pnp.cjs or .pnp.js) require native Yarn;
     // running through Bun would generate an incompatible node_modules tree.
-    // ponytail: check cwd only; parent workspace roots use Yarn's own discovery.
-    const isYarnPnp =
-      invokedAs === 'yarn' &&
-      (fs.existsSync(path.join(process.cwd(), '.pnp.cjs')) ||
-        fs.existsSync(path.join(process.cwd(), '.pnp.js')));
+    // Include parent directories when invoked inside a workspace package.
+    let isYarnPnp = false;
+    if (invokedAs === 'yarn') {
+      for (let dir = process.cwd(); ; dir = path.dirname(dir)) {
+        isYarnPnp =
+          fs.existsSync(path.join(dir, '.pnp.cjs')) ||
+          fs.existsSync(path.join(dir, '.pnp.js'));
+        if (isYarnPnp || path.dirname(dir) === dir) break;
+      }
+    }
     const bun = mapped.fallbackTo || isYarnPnp ? null : detector.getBunPath();
     const original = () => {
       const binary = detector.locateBinary(invokedAs);
