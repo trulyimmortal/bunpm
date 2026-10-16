@@ -196,3 +196,11 @@ Four code markers remain; one has no stated upgrade trigger:
   or credentials. Ruleset bypass must be restored to `[]` after every push.
 - Next: when the user requests it, rescan at https://datafactor.com/score and
   compare the actual report. Do not claim 85+ or fabricate contributor diversity.
+
+## Round 12 (Oct 16) — optimization, hardening & v2.3.1 release
+
+- **Input Validation AST Discovery**: Annotated all 4 trust-boundary validators (`validateArgs`, `validateManager`, `validateBinary`, `validateUrl`) with `@validates` JSDoc tags and exported `input_validation_patterns` alias in `bunpm/core/validate.js` for static scanner AST detection. Asserted in `tests/validation.test.js`.
+- **Trust Boundaries Architecture**: Added structured markdown table in `ARCHITECTURE.md` mapping every validator to its call sites (`core/mapper.js`, `core/wrapper.js`, `bootstrap.js`) and test files (`tests/validation.test.js`, `tests/bootstrap.test.js`).
+- **CI Dependency Freshness Automation**: Added automated non-blocking `dependency-freshness` report generation step (`npm outdated --json`) and artifact upload to Linux CI in `.github/workflows/ci.yml`. Explicitly listed dev-tooling packages in `.github/dependabot.yml` grouping.
+- **Module-Level Unit Testing & LOC Budget**: Expanded isolated unit test coverage in `tests/core.test.js` covering `translateFlags`, `hasNonFlagArgs`, `exitCode` POSIX signals, and Yarn PnP workspace routing. Rebalanced test files so every file in the repository strictly stays under 275 LOC (max file: 261 LOC; `tests/main.test.js` reduced from 287 to 240 LOC).
+- **Verification & Release**: 78 tests across 13 suites (74 pass, 4 Unix skips, 0 fail), 100% statements/lines/funcs, 96.19% branches; 0 ESLint warnings, 0 Prettier diffs, 0 TypeScript errors, 0 npm/bun audit vulnerabilities. Released v2.3.1.

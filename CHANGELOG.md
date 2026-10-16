@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## 2.3.1 - 2026-10-16
+
+- Annotate trust-boundary validators (`validateArgs`, `validateManager`, `validateBinary`, `validateUrl`) with `@validates` JSDoc tags and export `input_validation_patterns` for static analysis AST discovery.
+- Document Trust Boundaries call-site mapping and test coverage matrix in `ARCHITECTURE.md`.
+- Add automated non-blocking `dependency-freshness` report generation and artifact upload to Linux CI.
+- Enumerate explicit tooling dependencies in `.github/dependabot.yml` weekly grouped updates.
+- Expand isolated unit test coverage for `translateFlags`, `hasNonFlagArgs`, and `exitCode` POSIX signal handling in `tests/core.test.js`.
+- Refactor test suites to guarantee every single file in the repository strictly stays under 275 LOC (max file: 261 LOC).
+
 ## 2.3.0 - 2026-10-16
 
 - Leave unrelated Unix shell profiles byte-identical during uninstall, including
