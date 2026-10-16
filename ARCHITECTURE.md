@@ -38,7 +38,8 @@ flowchart LR
 - [`core/wrapper.js`](bunpm/core/wrapper.js): entry point. Validates every
   spawn in `resolveSpawn` (absolute executable, argument array, `shell: false`;
   a generic Windows `.cmd`/`.bat` shim runs through an explicit `cmd.exe` and
-  rejects shell-sensitive arguments), streams output, returns the exit code.
+  rejects shell-sensitive arguments), streams output with error tracking for both
+  child output pipes to prevent exit-zero masking, and returns the exit code.
 - [`core/mapper.js`](bunpm/core/mapper.js): pure command and flag tables that
   return Bun arguments or a fallback. No I/O. Ambiguity always resolves to
   fallback, never a guess.
@@ -48,7 +49,8 @@ flowchart LR
 - [`core/doctor.js`](bunpm/core/doctor.js): `bunpm doctor` health checks
   (Node.js floor, Bun, launchers, original managers).
 - [`core/formatter.js`](bunpm/core/formatter.js): line-by-line cosmetic rewrite
-  of non-interactive Bun output.
+  of non-interactive Bun output. Bounded to 64 KiB pending-line memory: oversized
+  lines stream directly unformatted to prevent unbounded buffering before EOF.
 - [`core/log.js`](bunpm/core/log.js): single diagnostic channel and structured
   multi-level logger (`error`, `warn`, `info`, `debug`). Emits human-readable
   `bunpm: <component>: <message>` stderr lines by default, and schema-valid JSON
@@ -100,7 +102,7 @@ bunpm enforces fail-closed validation at all external trust boundaries via [`bun
 | `validateBinary(binary)`     | Absolute executable binary paths                          | `core/wrapper.js:resolveSpawn`                                                   | `tests/validation.test.js`                            |
 | `validateUrl(value)`         | Pinned HTTPS download URLs                                | `bootstrap.js:download` (initial & redirects)                                    | `tests/validation.test.js`, `tests/bootstrap.test.js` |
 
-Executable contents found on PATH are trusted once resolved to absolute paths. Only `bootstrap.js` performs remote network I/O, cryptographically restricted to this repository at an exact 40-character commit SHA over TLS. Installers write only under `~/.bunpm`, one shell profile, or Windows User PATH. [`bootstrap.js`](bunpm/bootstrap.js) and platform installers run once by hand and are never imported by the runtime wrapper.
+Executable contents found on PATH are trusted once resolved to absolute paths. Only `bootstrap.js` performs remote network I/O, cryptographically restricted to this repository at an exact 40-character commit SHA over TLS. Installers write only under `~/.bunpm`, one shell profile, or Windows User PATH. [`bootstrap.js`](bunpm/bootstrap.js) deliberately maintains self-contained validation rather than importing `core/validate.js` because remote downloads run it as a standalone installer before any runtime files exist locally. It runs once by hand and is never imported by the runtime wrapper.
 
 Dependency boundaries & pruning rationale:
 

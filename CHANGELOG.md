@@ -1,11 +1,13 @@
 # Changelog
 
-## [Unreleased]
+## 2.3.2 - 2026-10-16
 
-- Report child output pipe failures as nonzero exits without retrying an
-  already-started package manager, and remove handlers when the child closes.
-- Preserve another Windows installer's directory when concurrent setup loses
-  the directory-creation race; still roll back this installer's copy failures.
+- Report child output pipe failures as nonzero exits without retrying an already-started package manager, and release signal handlers when the child closes.
+- Preserve another Windows installer's directory when concurrent setup loses the directory-creation race, and reliably roll back partial installations.
+- Distinguish profile read failures during Unix setup; reliably roll back and fail without modifying shell profiles on read errors across all Bash versions, including macOS Bash 3.2.
+- Bound formatter memory to 64 KiB pending lines, streaming oversized lines unformatted before EOF to prevent unbounded buffering.
+- Fall back `npm restart` to native npm to preserve `stop`/`start` lifecycle fallback behavior when no script is defined, while mapping `pnpm restart` to Bun (authored by @trulyimmortal in #23).
+- Assert committed `package-lock.json` and `bun.lock` tracking in CI, add `testConfig` manifest metadata, add `tests/README.md`, close `RELEASE_TAG` gap in `.env.example`, and handle `npm outdated` exit code 1 accurately in freshness reporting.
 
 ## 2.3.1 - 2026-10-16
 
