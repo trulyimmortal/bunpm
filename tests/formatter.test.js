@@ -187,6 +187,41 @@ describe('stream & line formatting', () => {
     ]);
   });
 
+  test('oversized lines stream unchanged before EOF and resume formatting after newline', () => {
+    const context = { invokedAs: 'npm', subcommand: 'install' };
+    const prefix = 'installed ' + 'x'.repeat(65536 - 'installed '.length);
+    const emoji = Buffer.from('🎉');
+    for (const ending of ['', '\ninstalled ok@1\n']) {
+      const source = new EventEmitter();
+      const writes = [];
+      formatStream(source, (text) => writes.push(text), context);
+      source.emit('data', Buffer.from(prefix));
+      source.emit('data', emoji.subarray(0, 2));
+      assert.deepEqual(writes, []);
+      source.emit('data', emoji.subarray(2));
+      assert.equal(writes.join(''), prefix + '🎉');
+      source.emit('data', Buffer.from('installed tail@1'));
+      assert.equal(writes.join(''), prefix + '🎉installed tail@1');
+      source.emit('data', Buffer.from(ending));
+      source.emit('data', Buffer.from([0xe2]));
+      source.emit('end');
+      const expected =
+        prefix +
+        '🎉installed tail@1' +
+        ending.replace('installed', 'added') +
+        '�';
+      assert.equal(writes.join(''), expected);
+    }
+    assert.equal(
+      streamed([Buffer.from(prefix + 'x\ninstalled ok@1')], context).join(''),
+      prefix + 'x\nadded ok@1',
+    );
+    assert.equal(
+      streamed([Buffer.from(prefix)], context).join(''),
+      prefix.replace('installed', 'added'),
+    );
+  });
+
   test('formatStream equals formatOutput for any chunking (seeded)', () => {
     // mulberry32: a deterministic generator, so failures are reproducible.
     let seed = 0xb0b;

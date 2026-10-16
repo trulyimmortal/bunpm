@@ -167,12 +167,16 @@ function formatOutput(rawOutput, context) {
     .join('\n');
 }
 
+const MAX_LINE_BUFFER = 65536;
+
 /**
  * Streaming counterpart of formatOutput: formats each complete line as it
  * arrives and the final fragment when the source ends. Chunks may split lines
  * and multi-byte characters anywhere. Each kept line is written with its
  * newline at once, so a dropped final fragment leaves one trailing newline
  * that formatOutput would not print.
+ *
+ * Oversized lines (> 64 KiB) stream unformatted to bound pending memory.
  *
  * @param {NodeJS.EventEmitter} source emits Buffer 'data' and 'end'
  * @param {(text: string) => void} write
@@ -181,18 +185,39 @@ function formatOutput(rawOutput, context) {
 function formatStream(source, write, context) {
   const decoder = new StringDecoder('utf8');
   let pending = '';
+  let raw = false;
   /**
    * @param {string} line
    * @param {string} eol
    */
   const emit = (line, eol) => {
+    if (raw) {
+      if (line || eol) write(line + eol);
+      raw = false;
+      return;
+    }
+    if (line.length > MAX_LINE_BUFFER) {
+      if (line || eol) write(line + eol);
+      return;
+    }
     const out = formatLine(line, context);
     if (out !== null && (out || eol)) write(out + eol);
   };
   source.on('data', (/** @type {Buffer} */ chunk) => {
-    const lines = (pending + decoder.write(chunk)).split('\n');
+    const text = decoder.write(chunk);
+    if (!text) return;
+    const lines = text.split('\n');
+    lines[0] = pending + lines[0];
     pending = /** @type {string} */ (lines.pop());
     for (const line of lines) emit(line, '\n');
+    if (pending.length > MAX_LINE_BUFFER) {
+      write(pending);
+      pending = '';
+      raw = true;
+    } else if (raw) {
+      write(pending);
+      pending = '';
+    }
   });
   source.on('end', () => emit(pending + decoder.end(), ''));
 }
