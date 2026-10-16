@@ -18,7 +18,8 @@ npm ci --ignore-scripts
 npm test
 ```
 
-Requires Node.js 22.13+. A passing run ends with a summary whose `tests`
+Requires Node.js 22.13+ and Bun 1.3.14 on PATH (native smoke tests invoke Bun).
+A passing run ends with a summary whose `tests`
 count is above 0 and `fail` is 0. See [Development](#development) for the
 full check list.
 
@@ -94,8 +95,9 @@ scheme. Do not run unreviewed remote code.
 
 bunpm is **not** a fully compatible package-manager replacement: Bun controls
 lockfile, layout, lifecycle, registry and workspace semantics for translated
-commands, and pnpm isolation and Yarn PnP are not preserved. Use the original
-manager when that matters.
+commands; pnpm isolation is not preserved. Yarn falls back to native execution
+when `.pnp.cjs` or `.pnp.js` exists in the current directory or an ancestor.
+Use the original manager when its other semantics matter.
 
 ## Check An Installation
 

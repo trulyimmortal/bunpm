@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## 2.3.0 - 2026-10-16
+
 - Leave unrelated Unix shell profiles byte-identical during uninstall, including
   files without a final newline.
 - Preserve native Yarn behavior inside nested Plug'n'Play workspaces by detecting
@@ -22,7 +24,7 @@
   `bootstrap.js` JSON logging, matching documented schema in `ARCHITECTURE.md`.
 - Enforce trust-boundary argument validation at CLI entry points: `validateArgs` in
   `bunpm/bootstrap.js` `main()` and function guard on `doctor` `options.spawn`.
-- Synchronize `bunpm/package.json` package version to 2.2.0.
+- Keep the root and installed `bunpm/package.json` versions synchronized.
 - Document `.github/dependabot.yml` weekly schedule excerpt and automated review
   policy in `ARCHITECTURE.md`.
 
