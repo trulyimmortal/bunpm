@@ -33,7 +33,8 @@ const INPUT_VALIDATION_PATTERNS = Object.freeze({
 function validateArgs(args) {
   if (
     !Array.isArray(args) ||
-    args.some(
+    // Materialize holes so sparse argv cannot bypass the string guard.
+    [...args].some(
       (arg) =>
         typeof arg !== 'string' ||
         !INPUT_VALIDATION_PATTERNS.safeString.test(arg),

@@ -53,6 +53,8 @@ describe('trust-boundary validation', () => {
       42,
       { 0: 'install', length: 1 },
       [undefined],
+      new Array(1),
+      Object.assign(new Array(3), { 0: 'install', 2: 'package' }),
       [null],
       [1],
       [['nested']],
@@ -160,7 +162,14 @@ describe('trust-boundary validation', () => {
   });
 
   test('bootstrap entry point rejects malformed arguments arrays', async () => {
-    for (const bad of [null, 'bad', 42, ['\0']]) {
+    for (const bad of [
+      null,
+      'bad',
+      42,
+      ['\0'],
+      new Array(2),
+      Object.assign(new Array(3), { 0: '--revision', 2: sha }),
+    ]) {
       assert.throws(() => bootstrap.validateArgs(bad), {
         name: 'TypeError',
         message: ARGS,
@@ -203,5 +212,8 @@ describe('trust-boundary validation', () => {
       name: 'TypeError',
     });
     assert.throws(() => validateUrl('not-a-url'), { name: 'TypeError' });
+    assert.throws(() => bootstrap.validateUrl('http://insecure.test'), {
+      name: 'TypeError',
+    });
   });
 });
