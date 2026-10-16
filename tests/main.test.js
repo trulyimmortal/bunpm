@@ -249,18 +249,35 @@ describe('streamed process execution and signals', () => {
     assert.equal(spawn.mock.callCount(), 1);
   });
 
-  test('Yarn Berry PnP project (.pnp.cjs or .pnp.js) falls back to native yarn', async () => {
+  test('Yarn PnP roots and nested workspaces preserve native argv without finding Bun', async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bunpm-pnp-'));
     const savedCwd = process.cwd();
     try {
-      fs.writeFileSync(path.join(dir, '.pnp.cjs'), '');
-      process.chdir(dir);
-      mock(detector, 'getBunPath', () => process.execPath);
-      mock(detector, 'locateBinary', () => process.execPath);
+      const nested = path.join(dir, 'packages', 'app');
+      fs.mkdirSync(nested, { recursive: true });
+      const bun = mock(detector, 'getBunPath', () => process.execPath);
+      const original = mock(detector, 'locateBinary', () => process.execPath);
       const sync = mock(cp, 'spawnSync', () => ({ status: 42 }));
-      assert.equal(await main('yarn', ['install']), 42);
-      assert.equal(sync.mock.callCount(), 1);
-      assert.deepEqual(sync.mock.calls[0].arguments[1], ['install']);
+      const args = ['add', '--dev', 'example'];
+      for (const marker of ['.pnp.cjs', '.pnp.js']) {
+        fs.writeFileSync(path.join(dir, marker), '');
+        for (const cwd of [dir, nested]) {
+          process.chdir(cwd);
+          assert.equal(await main('yarn', args), 42);
+        }
+        fs.unlinkSync(path.join(dir, marker));
+      }
+      assert.equal(bun.mock.callCount(), 0);
+      assert.equal(sync.mock.callCount(), 4);
+      for (const call of sync.mock.calls)
+        assert.deepEqual(call.arguments[1], args);
+      for (const call of original.mock.calls)
+        assert.deepEqual(call.arguments, ['yarn']);
+      // With both markers removed, discovery reaches the root and uses Bun.
+      assert.equal(await main('yarn', ['run', 'build']), 42);
+      assert.equal(bun.mock.callCount(), 1);
+      assert.equal(original.mock.callCount(), 4);
+      assert.deepEqual(sync.mock.calls[4].arguments[1], ['run', 'build']);
     } finally {
       process.chdir(savedCwd);
       fs.rmSync(dir, { recursive: true, force: true });

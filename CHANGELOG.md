@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Preserve native Yarn behavior inside nested Plug'n'Play workspaces by detecting
+  `.pnp.cjs` and `.pnp.js` in ancestor directories.
 - Reject sparse argument arrays at both core and standalone bootstrap boundaries;
   use `TypeError` consistently for unsafe bootstrap download URLs.
 - Gate releases on the full three-OS CI workflow and matching package/tag
