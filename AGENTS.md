@@ -191,6 +191,7 @@ Four code markers remain; one has no stated upgrade trigger:
   sandbox auth failures did not mean the saved tokens were invalid.
 - Alternate-account operations used process-only `GH_TOKEN` from `gh auth token
 --user trulyimmortal`, never printed. Avoid persistent account switching on C:.
+- Alternate-account Git identity: user.name="trulyimmortal", user.email="219461813+trulyimmortal@users.noreply.github.com" (ID 219461813). Never use 192661858 (maps to hendrydwi25).
 - Temporary fixtures, fresh clone, tool binaries and caches used the disposable
   X: scratch directory and are removed at session end. Never commit local paths
   or credentials. Ruleset bypass must be restored to `[]` after every push.
