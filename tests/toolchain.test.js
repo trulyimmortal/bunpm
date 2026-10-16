@@ -4,6 +4,31 @@ const fs = require('node:fs');
 const cp = require('node:child_process');
 
 describe('toolchain & CI invariants', () => {
+  test('release rejects missing, mismatched and shell-sensitive tags', () => {
+    const { version } = require('../package.json');
+    for (const tag of [
+      '',
+      'v0.0.0',
+      `v${version};echo unsafe`,
+      `v${version}`,
+    ]) {
+      const result = cp.spawnSync(
+        process.execPath,
+        ['scripts/check-release.js'],
+        {
+          env: { ...process.env, RELEASE_TAG: tag },
+          encoding: 'utf8',
+        },
+      );
+      assert.equal(result.status, tag === `v${version}` ? 0 : 1);
+    }
+    const release = fs.readFileSync('.github/workflows/release.yml', 'utf8');
+    assert.match(release, /verify:\n\s+uses: \.\/\.github\/workflows\/ci.yml/);
+    assert.match(release, /release:\n\s+needs: verify/);
+    assert.doesNotMatch(release, /persist-credentials: true/);
+    assert.match(release, /run: node scripts\/check-release.js/);
+  });
+
   // Every CI job must test with the same Node.js and Bun, and Dependabot cannot
   // update the setup-node/setup-bun version inputs.
   test('Node.js and Bun pins agree across CI jobs and package.json', () => {

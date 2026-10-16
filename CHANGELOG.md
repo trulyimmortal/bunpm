@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Gate releases on the full three-OS CI workflow and matching package/tag
+  versions; limit write permissions to the publishing job.
 - Safely translate benign `--no-fund` and `--no-audit` flags during install across npm, yarn, and pnpm.
 - Map `--prefer-offline` and `--prefer-online` flags to Bun equivalents across npm, yarn, and pnpm.
 - Document trust boundaries in `bunpm/core/validate.js` header, enforce `TypeError` across all boundary validators, and evaluate `INPUT_VALIDATION_PATTERNS` regex schemas directly.
