@@ -46,8 +46,11 @@ if [ "${1:-}" != '--no-path' ]; then
     # shellcheck disable=SC2016
     grep -Fx 'export PATH="$HOME/.bunpm/bin:$PATH"' "$PROFILE" >/dev/null || profile_status=$?
   fi
-  # A failed subshell triggers ERR rollback; a direct exit would bypass it.
-  if [ "$profile_status" -gt 1 ]; then (exit "$profile_status"); fi
+  # Explicit rollback on profile read failure; portable across bash versions.
+  if [ "$profile_status" -gt 1 ]; then
+    rm -rf "$INSTALL_DIR"
+    exit "$profile_status"
+  fi
   if [ "$profile_status" -eq 1 ]; then
     # shellcheck disable=SC2016
     printf '\n# Added by bunpm installer\nexport PATH="$HOME/.bunpm/bin:$PATH"\n' >> "$PROFILE"

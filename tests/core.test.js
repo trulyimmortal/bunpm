@@ -4,6 +4,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const cp = require('node:child_process');
+const { EventEmitter } = require('node:events');
+const { PassThrough } = require('node:stream');
+const { setImmediate } = require('node:timers');
 const detector = require('../bunpm/core/detector');
 const {
   mapCommand,
@@ -168,5 +171,44 @@ describe('core command mapping', () => {
     } finally {
       process.chdir(savedCwd);
     }
+  });
+
+  test('pipe errors wait for close, fail without retry and remove listeners', async () => {
+    const logs = mock(console, 'error', () => {});
+    mock(detector, 'getBunPath', () => process.execPath);
+    const original = mock(detector, 'locateBinary', () => process.execPath);
+    let child;
+    mock(cp, 'spawn', () => child);
+    for (const stream of ['stdout', 'stderr']) {
+      child = Object.assign(new EventEmitter(), {
+        stdout: new PassThrough(),
+        stderr: new PassThrough(),
+      });
+      const before = ['SIGINT', 'SIGTERM'].map((s) => process.listenerCount(s));
+      let settled = false;
+      const pending = main('npm', ['install']).then((code) => {
+        settled = true;
+        return code;
+      });
+      child.emit('spawn');
+      child[stream].emit(
+        'error',
+        Object.assign(new Error('pipe failed'), { code: 'EACCES' }),
+      );
+      await new Promise((resolve) => setImmediate(resolve));
+      assert.equal(settled, false);
+      child.stdout.end();
+      child.stderr.end();
+      child.emit('close', 0, null);
+      assert.equal(await pending, 1);
+      assert.equal(child[stream].listenerCount('error'), 0);
+      assert.deepEqual(
+        ['SIGINT', 'SIGTERM'].map((s) => process.listenerCount(s)),
+        before,
+      );
+    }
+    assert.equal(original.mock.callCount(), 0);
+    assert.equal(logs.mock.callCount(), 2);
+    assert.match(logs.mock.calls[0].arguments[0], /pipe failed/);
   });
 });

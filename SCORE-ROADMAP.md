@@ -48,7 +48,7 @@ an instruction to commit each edited line. Complete validation before committing
 
 ### 2. Unix installer profile read failures
 
-- [ ] Fix Linux and macOS `install.sh` profile-marker checks.
+- [x] Fix Linux and macOS `install.sh` profile-marker checks. (Delivered with portable rollback)
 - Evidence: `! grep` treats exit 2 (read failure) as exit 1 (marker absent), so
   installation may append a marker and report success after a read failure.
 - Distinguish match, absent marker, and read error. On read error preserve the
@@ -79,7 +79,7 @@ an instruction to commit each edited line. Complete validation before committing
 
 ### 5. Bound formatter buffering for long lines
 
-- [ ] Bound `formatter.js` pending-line memory without truncating output.
+- [x] Bound `formatter.js` pending-line memory without truncating output. (Delivered in `8725ef4`)
 - Evidence: a 6.25 MiB newline-free stream currently emits nothing before EOF,
   even when the destination is fast.
 - Small approach: bypass cosmetics for an oversized line, stream it unchanged,
@@ -125,8 +125,8 @@ testing directory and must be cleaned after use.
 
 ## Continuation checkpoint
 
-- Roadmap synchronized at revision `78d23b0` on `main`.
-- Item 1 (`e8162e5`) and Item 3 (`78d23b0`) delivered and verified on native CI.
-- Item 2 Unix profile fix staged in `bunpm/platforms/{linux,macos}/scripts/install.sh` and `tests/installer.test.js`.
-- Item 5 long-line buffering regression test written in `tests/formatter.test.js`.
-- Next actions: implement Item 5 buffering in `formatter.js`, commit Item 2 & 5 with tests, address Item 4 & 6.
+- Roadmap synchronized with Items 1, 2, 3, and 5 delivered.
+- Item 1 (`e8162e5`), Item 3 (`78d23b0`), and Item 5 (`8725ef4`) committed.
+- Item 2 macOS/Linux install.sh rollback fix hardened with explicit rollback for Bash 3.2.
+- Test files rebalanced to keep all repository files strictly < 275 LOC (max file: 266 LOC).
+- Next actions: Task 4 (npm restart fallback via PR from trulyimmortal for Issue #22), Task 6 (CI lockfile assertion, freshness exit codes, .env.example RELEASE_TAG, testConfig metadata).
