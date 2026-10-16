@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Reject sparse argument arrays at both core and standalone bootstrap boundaries;
+  use `TypeError` consistently for unsafe bootstrap download URLs.
 - Gate releases on the full three-OS CI workflow and matching package/tag
   versions; limit write permissions to the publishing job.
 - Safely translate benign `--no-fund` and `--no-audit` flags during install across npm, yarn, and pnpm.

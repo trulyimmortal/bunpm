@@ -68,7 +68,7 @@ function validateUrl(value) {
     ],
   ];
   const broken = rules.find(([, ok]) => !ok);
-  if (broken) throw new Error(`Unsafe download URL: ${broken[0]}`);
+  if (broken) throw new TypeError(`Unsafe download URL: ${broken[0]}`);
   return url;
 }
 
@@ -174,7 +174,8 @@ async function download(
 function validateArgs(args) {
   if (
     !Array.isArray(args) ||
-    args.some((arg) => typeof arg !== 'string' || arg.includes('\0'))
+    // Materialize holes so sparse argv cannot bypass the string guard.
+    [...args].some((arg) => typeof arg !== 'string' || arg.includes('\0'))
   ) {
     throw new TypeError(
       'Arguments must be an array of strings without NUL bytes',

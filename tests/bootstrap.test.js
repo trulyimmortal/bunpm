@@ -93,6 +93,7 @@ describe('bootstrap & remote download', () => {
       [base + '../package.json', /40-hex commit SHA/],
     ])
       assert.throws(() => validateUrl(url), {
+        name: 'TypeError',
         message: new RegExp('^Unsafe download URL: .*' + rule.source),
       });
   });
