@@ -184,6 +184,45 @@ describe('streamed process execution and signals', () => {
     );
   });
 
+  test('pipe errors wait for close, fail without retry and remove listeners', async () => {
+    const logs = mock(console, 'error', () => {});
+    mock(detector, 'getBunPath', () => process.execPath);
+    const original = mock(detector, 'locateBinary', () => process.execPath);
+    let child;
+    mock(cp, 'spawn', () => child);
+    for (const stream of ['stdout', 'stderr']) {
+      child = Object.assign(new EventEmitter(), {
+        stdout: new PassThrough(),
+        stderr: new PassThrough(),
+      });
+      const before = ['SIGINT', 'SIGTERM'].map((s) => process.listenerCount(s));
+      let settled = false;
+      const pending = main('npm', ['install']).then((code) => {
+        settled = true;
+        return code;
+      });
+      child.emit('spawn');
+      child[stream].emit(
+        'error',
+        Object.assign(new Error('pipe failed'), { code: 'EACCES' }),
+      );
+      await new Promise((resolve) => setImmediate(resolve));
+      assert.equal(settled, false);
+      child.stdout.end();
+      child.stderr.end();
+      child.emit('close', 0, null);
+      assert.equal(await pending, 1);
+      assert.equal(child[stream].listenerCount('error'), 0);
+      assert.deepEqual(
+        ['SIGINT', 'SIGTERM'].map((s) => process.listenerCount(s)),
+        before,
+      );
+    }
+    assert.equal(original.mock.callCount(), 0);
+    assert.equal(logs.mock.callCount(), 2);
+    assert.match(logs.mock.calls[0].arguments[0], /pipe failed/);
+  });
+
   test('fallback runs only before Bun starts and errors never become success', async () => {
     mock(console, 'error', () => {});
     mock(detector, 'getBunPath', () => process.execPath);

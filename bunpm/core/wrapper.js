@@ -180,6 +180,11 @@ async function main(invokedAs = process.argv[2], args = process.argv.slice(3)) {
       };
       /** @type {Error | undefined} */
       let failure;
+      const onPipeError = (/** @type {Error} */ error) => {
+        failure = error;
+      };
+      for (const source of [child.stdout, child.stderr])
+        source?.on('error', onPipeError);
       child.on('spawn', () => {
         started = true;
       });
@@ -207,7 +212,11 @@ async function main(invokedAs = process.argv[2], args = process.argv.slice(3)) {
         (
           /** @type {number | null} */ status,
           /** @type {NodeJS.Signals | null} */ signal,
-        ) => done({ error: failure, status, signal }),
+        ) => {
+          for (const source of [child.stdout, child.stderr])
+            source?.off('error', onPipeError);
+          done({ error: failure, status, signal });
+        },
       );
     });
     // Only a child that never started may be retried with the original manager.

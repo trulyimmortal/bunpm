@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Report child output pipe failures as nonzero exits without retrying an
+  already-started package manager, and remove handlers when the child closes.
 - Preserve another Windows installer's directory when concurrent setup loses
   the directory-creation race; still roll back this installer's copy failures.
 
