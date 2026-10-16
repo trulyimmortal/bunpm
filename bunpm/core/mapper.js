@@ -68,7 +68,6 @@ const NPM_TO_BUN = {
   'run-script': 'run',
   start: 'run start',
   stop: 'run stop',
-  restart: 'run restart',
   test: 'run test',
   t: 'run test',
   update: 'update',
@@ -104,6 +103,7 @@ const PNPM_TO_BUN = {
   install: 'install',
   i: 'install',
   why: 'pm why',
+  restart: 'run restart',
   dlx: 'x',
 };
 

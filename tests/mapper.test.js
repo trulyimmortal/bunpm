@@ -54,7 +54,7 @@ describe('package manager translation tables', () => {
         ['remove', 'x'],
       ]),
       [['t'], ['run', 'test']],
-      ...['start', 'stop', 'restart'].map((name) => [[name], ['run', name]]),
+      ...['start', 'stop'].map((name) => [[name], ['run', name]]),
       ...['update', 'upgrade', 'up'].map((alias) => [[alias], ['update']]),
       ...['ls', 'list'].map((alias) => [[alias], ['pm', 'ls']]),
       [['outdated'], ['outdated']],
@@ -71,6 +71,7 @@ describe('package manager translation tables', () => {
         ['run', 'build'],
       ],
     ]);
+    assertFallback('npm', [['restart'], ['restart', 'app']]);
   });
 
   test('npm install flags translate to Bun flags', () => {
@@ -206,6 +207,7 @@ describe('package manager translation tables', () => {
       [['up'], ['update']],
       [['ls'], ['pm', 'ls']],
       [['start'], ['run', 'start']],
+      [['restart'], ['run', 'restart']],
     ]);
     assert.deepEqual(mapCommand('pnpm', ['dlx', 'create-vite']), {
       useBunx: true,
