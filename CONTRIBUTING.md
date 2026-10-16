@@ -69,17 +69,14 @@ line per diagnostic (`timestamp`, `level`, `component`, `message`, optional
 `code`); `tests/log.test.js` pins that schema. Changing a diagnostic requires
 updating its assertion in the matching `tests/*.test.js` file.
 
-## Good first issues
+## Maintenance and review
 
-Each is a real, self-contained gap; keep the fix and its test in one commit.
+See [MAINTAINERS.md](MAINTAINERS.md) for ownership, independent review and
+continuity when the maintainer is unavailable. Start with a reproducible issue;
+keep the behavior fix and its regression test in one commit.
 
-- Yarn Berry Plug'n'Play projects (with `.pnp.cjs`) get a `node_modules` folder
-  when `yarn add` runs through Bun. A cwd check in `bunpm/core/wrapper.js` could
-  fall back (the mapper stays I/O-free).
-- Every Unix install/uninstall cycle leaves one blank line in the profile:
-  `install.sh` writes a blank line before the marker and the `uninstall.sh` awk
-  filter keeps it (`bunpm/platforms/{linux,macos}/scripts/`). Extend
-  `tests/uninstall.test.js`.
+Tagged releases run the same complete CI workflow before publishing. The tag
+must match both package versions; only the publishing job gets write access.
 
 ## Branch Protection & Pull Request Gate
 
@@ -120,8 +117,8 @@ Windows CI also runs `npx c8 check-coverage --per-file`, requiring 90% in
 **each** runtime file, including bootstrap, because
 only Windows can execute `wrapper.js`'s batch-shim branch; on Unix that branch is
 unreachable, so a per-file gate there would measure the platform, not the tests.
-Files no test loads still count (`all: true`). The gate does not enforce a branch
-threshold (c8 prints it); native subprocess execution is
+Files no test loads still count (`all: true`). The per-file gate disables its
+branch threshold; the overall gate still requires 90% branches. Native subprocess execution is
 covered by assertions, not counted as parent-process line coverage. CI runs the
 gate on Ubuntu, macOS and Windows.
 

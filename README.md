@@ -129,6 +129,9 @@ the request flow, each module's role, error handling and trust boundaries.
 
 ## Maintenance Status & Release Cadence
 
+Ownership, review expectations and continuity are documented in
+[MAINTAINERS.md](MAINTAINERS.md), including the single-maintainer limitation.
+
 - **Maintenance Status**: Actively maintained with continuous multi-OS automated CI validation across Ubuntu, macOS, and Windows.
 - **Dependency Cadence**: Automated weekly dependency audits and update proposals via [.github/dependabot.yml](.github/dependabot.yml) on Mondays.
 - **Release Cadence**: SemVer releases triggered on verified tag pushes via automated release workflow (.github/workflows/release.yml).

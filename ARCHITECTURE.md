@@ -89,6 +89,22 @@ mapped to `128 + signo`. Wrapper-level errors exit with code `1`.
 
 ## Boundaries & Dependencies
 
+### Trust boundaries
+
+`core/mapper.js:mapCommand` calls `validateManager` and `validateArgs` before
+translation. `core/wrapper.js:resolveSpawn` calls `validateBinary` and
+`validateArgs` before synchronous or asynchronous process creation.
+`core/detector.js:locateBinary` checks binary names before PATH lookup, and
+`core/doctor.js:doctor` checks its injected spawn function.
+
+The standalone bootstrap has its own guards: `main` calls `validateArgs`,
+`download` calls `validateUrl` for the initial request and every redirect,
+and checks the original revision throughout. The exported core `validateUrl`
+is tested separately; bootstrap cannot import it before downloads complete.
+Negative cases are covered by `tests/validation.test.js` and
+`tests/bootstrap.test.js`. Executable contents found on PATH are trusted;
+validation of a path does not authenticate the executable.
+
 [`bootstrap.js`](bunpm/bootstrap.js) ([Remote Bootstrap](README.md#remote-bootstrap)) and the platform installers run once, by
 hand, and are never imported by the wrapper. Bootstrap imports nothing from
 `core/` because those files are not downloaded yet when it starts.
