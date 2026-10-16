@@ -7,6 +7,11 @@ INSTALL_DIR="$HOME/.bunpm"
 if [ "${1:-}" != '--no-path' ]; then
   for profile in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile" "$HOME/.zprofile" "$HOME/.bash_profile"; do
     if [ ! -f "$profile" ]; then continue; fi
+    # Do not rewrite unrelated profiles, even ones without a final newline.
+    marker_status=0
+    grep -Fx '# Added by bunpm installer' "$profile" >/dev/null || marker_status=$?
+    if [ "$marker_status" -eq 1 ]; then continue; fi
+    if [ "$marker_status" -ne 0 ]; then exit "$marker_status"; fi
     TMP_FILE="$(mktemp)"
     trap 'rm -f "$TMP_FILE"' EXIT
     # Remove only our marked exact line, including the legacy absolute spelling.

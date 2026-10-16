@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Leave unrelated Unix shell profiles byte-identical during uninstall, including
+  files without a final newline.
 - Preserve native Yarn behavior inside nested Plug'n'Play workspaces by detecting
   `.pnp.cjs` and `.pnp.js` in ancestor directories.
 - Reject sparse argument arrays at both core and standalone bootstrap boundaries;

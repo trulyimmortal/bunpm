@@ -87,6 +87,29 @@ describe('uninstaller & profile cleanup', () => {
   );
 
   test(
+    'uninstall leaves unrelated profiles byte-identical and untouched',
+    { skip },
+    () =>
+      withHome((home) => {
+        const profiles = ['.bashrc', '.zprofile'].map((name) =>
+          path.join(home, name),
+        );
+        const content = '# Added by bunpm installer (unrelated)\nexport KEEP=1';
+        for (const profile of profiles) {
+          fs.writeFileSync(profile, content);
+          fs.utimesSync(profile, 946684800, 946684800);
+        }
+        const result = uninstall(home);
+        assert.equal(result.status, 0, result.stderr);
+        for (const profile of profiles) {
+          assert.equal(fs.readFileSync(profile, 'utf8'), content);
+          assert.equal(fs.statSync(profile).mtimeMs, 946684800000);
+        }
+        assert.equal(fs.existsSync(path.join(home, '.bunpm')), false);
+      }),
+  );
+
+  test(
     '--no-path removes the install and leaves profiles byte-identical',
     { skip },
     () =>
