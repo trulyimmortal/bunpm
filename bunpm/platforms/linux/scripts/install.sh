@@ -39,9 +39,16 @@ if [ "${1:-}" != '--no-path' ]; then
   for candidate in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
     if [ -f "$candidate" ]; then PROFILE="$candidate"; break; fi
   done
-  # Literal HOME expansion avoids injecting special characters from a home path.
-  # shellcheck disable=SC2016
-  if [ ! -f "$PROFILE" ] || ! grep -Fqx 'export PATH="$HOME/.bunpm/bin:$PATH"' "$PROFILE"; then
+  profile_status=1
+  if [ -f "$PROFILE" ]; then
+    profile_status=0
+    # Literal HOME expansion avoids injecting special characters from a home path.
+    # shellcheck disable=SC2016
+    grep -Fx 'export PATH="$HOME/.bunpm/bin:$PATH"' "$PROFILE" >/dev/null || profile_status=$?
+  fi
+  # A failed subshell triggers ERR rollback; a direct exit would bypass it.
+  if [ "$profile_status" -gt 1 ]; then (exit "$profile_status"); fi
+  if [ "$profile_status" -eq 1 ]; then
     # shellcheck disable=SC2016
     printf '\n# Added by bunpm installer\nexport PATH="$HOME/.bunpm/bin:$PATH"\n' >> "$PROFILE"
   fi
