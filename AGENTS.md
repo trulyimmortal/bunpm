@@ -42,12 +42,14 @@ python -c "import yaml; assert 'on' in yaml.safe_load(open('.github/workflows/ci
 
 ## Push procedure
 
-Push to `main` only. No branches, PRs, issues, tags or releases (user rule).
+Default: push to `main` only; no new branches, PRs, issues, tags or releases
+without an explicit request. On Oct 16 the user explicitly authorized the
+same-owner fork/PR workflow and release v2.3.0 recorded below; both are complete.
 Ruleset `main-protection` (id 22371642) requires `test-unit`, so:
 
 1. `gh api -X PUT repos/yv3000/bunpm/rulesets/22371642 --input -` with
    `{"bypass_actors":[{"actor_id":5,"actor_type":"RepositoryRole","bypass_mode":"always"}]}`.
-2. `git push`.
+2. `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`.
 3. Restore with the same call and `{"bypass_actors":[]}`, even if the push failed.
 4. `gh run watch`; rerun "not acquired by Runner" failures with `gh run rerun <id> --failed`.
 
@@ -114,7 +116,83 @@ event overload typing in `bunpm/core/wrapper.js` by dropping redundant JSDoc cas
 - **CI/CD Maturity (80 -> 90+)**: Resolved PyYAML `NoneType` crash quirk in `.github/workflows/ci.yml` by giving `pull_request` explicit `branches: [main]` dictionary structure; added weekly `schedule: - cron: '0 6 * * 1'` trigger; added dedicated visible step `'Print coverage summary'` executing `npx c8 report --reporter=text-summary` in matrix quality job.
 - **Dependency Health & Maintenance (55/62 -> 80+)**: Published explicit `Maintenance Status & Release Cadence` section in `README.md` documenting active multi-OS CI validation, weekly Dependabot updates (`.github/dependabot.yml`), SemVer release automation, and fresh-clone verification steps matching `CONTRIBUTING.md`.
 
-## Next
+## Round 11 (Oct 16) — verified release and handoff
 
-- Merge Stream 2 PRs from second GitHub account for contributor diversity and closed issues.
-- Re-scan on DataFactor; observe score recovery toward 85+ (Grade A).
+Latest supplied DataFactor report: **76**, dated Oct 15 at 20:00. Earlier score
+arrows above were targets, not verified improvements. No rescan was performed;
+the user explicitly deferred it until the repository work was finished.
+
+- Published [v2.3.0](https://github.com/yv3000/bunpm/releases/tag/v2.3.0) at
+  `555a90c525d13e3e6edd1484ffc6ccd85cbdce94`. Both package versions and lockfiles
+  were refreshed together; dependency versions remain unchanged. `bun.lock`
+  needed no content change. Runtime dependencies remain zero.
+- Release workflow now reuses the complete three-OS CI before publishing,
+  validates the tag against both package versions, avoids shell interpolation
+  of tag names, and limits write permission to the publishing job. Regression
+  checks live in `tests/toolchain.test.js`.
+- Fixed sparse argv acceptance in core and standalone bootstrap guards, and
+  aligned bootstrap URL errors with `TypeError`. Regression assertions failed
+  before the fix. [Issue #18](https://github.com/yv3000/bunpm/issues/18) closed
+  through [PR #20](https://github.com/yv3000/bunpm/pull/20).
+- Fixed nested Yarn PnP discovery, preserving native argv for both marker
+  formats and normal Bun routing without a marker.
+  [Issue #19](https://github.com/yv3000/bunpm/issues/19) closed through
+  [PR #21](https://github.com/yv3000/bunpm/pull/21).
+- Both PRs were authored via trulyimmortal and reviewed/merged via yv3000 after
+  all native CI passed. **These accounts have the same human owner**, disclosed
+  in the issues, PRs, reviews and `MAINTAINERS.md`. They are not independent
+  contributors or independent review. Never claim otherwise.
+- Unix uninstall now leaves profiles without its exact marker byte-identical,
+  preserving modification times and missing final newlines. Read errors still
+  fail. The old behavior was reproduced in Git Bash; native Linux and macOS CI
+  confirmed the regression test passes. No Docker, infrastructure or new
+  dependencies were added.
+- Added honest ownership/continuity guidance, documented actual validator
+  callers, removed stale good-first-issue suggestions, corrected coverage
+  guidance, and clarified that fresh-clone smoke tests require Bun on PATH.
+
+### Verification evidence
+
+- Windows local: **76 tests / 13 suites / 72 pass / 4 Unix-only skips / 0 fail**.
+  Coverage: **100% statements, lines and functions; 96.18% branches**.
+  Linux CI coverage: 97.44% statements/lines, 100% functions, 95.87% branches;
+  Windows-specific spawn branches explain the platform difference.
+- Syntax, zero-warning ESLint, TypeScript, Prettier, c8 overall/per-file gate,
+  three repeat runs, native smoke, npm audit, Bun audit, ShellCheck, Bash syntax,
+  PowerShell parsing, actionlint 1.7.7, PyYAML parsing and diff checks passed.
+  Both audits reported zero vulnerabilities. Largest source/test: 286 lines.
+- Fresh **remote** clone at the release commit passed node-managed npm ci,
+  build and tests, then frozen Bun install, with no tracked file changes.
+  Node 16.9.0 runtime smoke passed using an official checksum-verified binary;
+  local full tests used Node 26.5.1 and CI used pinned Node 22.22.2.
+- [Release commit CI](https://github.com/yv3000/bunpm/actions/runs/38847937164)
+  and [tagged release CI](https://github.com/yv3000/bunpm/actions/runs/38848114868)
+  both passed all three native operating systems. Release is published,
+  neither draft nor prerelease.
+
+### Remaining deliberate limits (Ponytail debt)
+
+Assumed load: one short-lived CLI invocation, no service or shared daemon.
+Four code markers remain; one has no stated upgrade trigger:
+
+- `scripts/repeat.js`: Node below 26.1 repeats in file order; newer Node enables
+  seeded randomization automatically.
+- `core/mapper.js`: only `--registry` takes a translated value; other value
+  flags stay native. Add specific spellings only when users need them.
+- `core/wrapper.js`: stalled stdout can buffer output in memory without
+  backpressure. **no-trigger** in the existing comment; remains a known limit.
+- `core/wrapper.js`: Unix process-group SIGINT plus forwarding may deliver two
+  signals. Revisit group-aware forwarding if a signal-sensitive child needs it.
+
+### Environment notes and next step
+
+- Git's cached HTTPS credential selected trulyimmortal even while gh selected
+  yv3000. Use the per-command gh credential helper above. Network-restricted
+  sandbox auth failures did not mean the saved tokens were invalid.
+- Alternate-account operations used process-only `GH_TOKEN` from `gh auth token
+--user trulyimmortal`, never printed. Avoid persistent account switching on C:.
+- Temporary fixtures, fresh clone, tool binaries and caches used the disposable
+  X: scratch directory and are removed at session end. Never commit local paths
+  or credentials. Ruleset bypass must be restored to `[]` after every push.
+- Next: when the user requests it, rescan at https://datafactor.com/score and
+  compare the actual report. Do not claim 85+ or fabricate contributor diversity.
