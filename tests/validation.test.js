@@ -130,6 +130,23 @@ describe('trust-boundary validation', () => {
       assert.throws(() => validateUrl(url), { name: 'TypeError' });
   });
 
+  test('URL guards reject non-URL objects without calling coercion hooks', () => {
+    for (const guard of [validateUrl, bootstrap.validateUrl]) {
+      let coerced = false;
+      const object = {
+        toString() {
+          coerced = true;
+          return good;
+        },
+      };
+      for (const value of [object, [good], null, undefined, 1, true])
+        assert.throws(() => guard(value), TypeError);
+      assert.equal(coerced, false);
+      assert.equal(guard(good).href, good);
+      assert.equal(guard(new URL(good)).href, good);
+    }
+  });
+
   test('spawnCommand refuses relative, empty or NUL-containing executables', () => {
     for (const binary of [
       '',

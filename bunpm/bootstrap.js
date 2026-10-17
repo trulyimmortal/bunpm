@@ -45,10 +45,13 @@ function filesFor(platform) {
 }
 
 /**
- * @param {string | URL} value
+ * @security-guard trust-boundary
+ * @param {unknown} value
  * @returns {URL}
  */
 function validateUrl(value) {
+  if (typeof value !== 'string' && !(value instanceof URL))
+    throw new TypeError('Expected a URL string or URL instance');
   const url = new URL(value);
   // Every download must satisfy all of these; the first broken one is reported.
   /** @type {[string, boolean][]} */

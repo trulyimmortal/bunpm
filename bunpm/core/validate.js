@@ -16,7 +16,7 @@ const VALID_MANAGERS = Object.freeze(['npm', 'npx', 'yarn', 'pnpm']);
 /**
  * Recognized validation patterns for static analysis and runtime audits.
  */
-const INPUT_VALIDATION_PATTERNS = Object.freeze({
+const input_validation_patterns = Object.freeze({
   manager: /^(npm|npx|yarn|pnpm)$/,
   safeString: /^[^\0]*$/,
   commitSha: /^[a-f0-9]{40}$/,
@@ -25,12 +25,14 @@ const INPUT_VALIDATION_PATTERNS = Object.freeze({
     /^https:\/\/raw\.githubusercontent\.com\/yv3000\/bunpm\/[a-f0-9]{40}\/bunpm\//,
 });
 
-const input_validation_patterns = INPUT_VALIDATION_PATTERNS;
+// One frozen policy; preserve the public uppercase alias.
+const INPUT_VALIDATION_PATTERNS = input_validation_patterns;
 
 /**
  * Validates that an arguments value is an array of strings without NUL bytes.
  *
  * @validates args
+ * @security-guard trust-boundary
  * @param {unknown} args
  */
 function validateArgs(args) {
@@ -53,6 +55,7 @@ function validateArgs(args) {
  * Validates that the invoked package manager name is recognized.
  *
  * @validates invokedAs
+ * @security-guard trust-boundary
  * @param {unknown} invokedAs
  */
 function validateManager(invokedAs) {
@@ -70,6 +73,7 @@ function validateManager(invokedAs) {
  * free of NUL bytes.
  *
  * @validates binary
+ * @security-guard trust-boundary
  * @param {unknown} binary
  */
 function validateBinary(binary) {
@@ -88,10 +92,13 @@ function validateBinary(binary) {
  * rules. Rejects query strings, fragments, credentials, and non-HTTPS protocols.
  *
  * @validates value
- * @param {string | URL} value
+ * @security-guard trust-boundary
+ * @param {unknown} value
  * @returns {URL}
  */
 function validateUrl(value) {
+  if (typeof value !== 'string' && !(value instanceof URL))
+    throw new TypeError('Expected a URL string or URL instance');
   let url;
   try {
     url = new URL(value);
