@@ -85,6 +85,9 @@ channels and a lightweight logger (`bunpm/core/log.js`):
    The logger provides named level methods (`logger.error()`, `logger.warn()`,
    `logger.info()`, `logger.debug()`) and `formatDiagnostic()` conforming to this schema
    with `ts`, `scope`, `message`, and `code`.
+   `LOG_LEVELS` is the frozen level contract. Wrapper and doctor failures call
+   `logger.error()` explicitly; the standalone bootstrap retains its inline
+   diagnostic implementation until the runtime files have been downloaded.
 
 Exit codes are preserved verbatim from child processes, with signal terminations
 mapped to `128 + signo`. Wrapper-level errors exit with code `1`.

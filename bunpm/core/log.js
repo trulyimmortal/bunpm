@@ -4,7 +4,14 @@
 // for CI pipelines and tools that embed bunpm.
 
 /**
- * @typedef {'error' | 'warn' | 'info' | 'debug'} LogLevel
+ * Built-in structured diagnostic logger; no runtime package or transport.
+ * @logging_framework bunpm-diagnostic-logger
+ * @type {readonly ['error', 'warn', 'info', 'debug']}
+ */
+const LOG_LEVELS = Object.freeze(['error', 'warn', 'info', 'debug']);
+
+/**
+ * @typedef {(typeof LOG_LEVELS)[number]} LogLevel
  * @typedef {object} DiagnosticRecord
  * @property {string} ts ISO 8601 UTC timestamp
  * @property {string} timestamp ISO 8601 UTC timestamp (alias)
@@ -67,4 +74,4 @@ const logger = Object.freeze({
   debug: (component, message, code) => log(component, message, code, 'debug'),
 });
 
-module.exports = { log, logger, formatDiagnostic };
+module.exports = { LOG_LEVELS, log, logger, formatDiagnostic };

@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+- Route wrapper and doctor failures through the explicit structured logger;
+  expose its frozen log-level contract while preserving diagnostic output.
+
 ## 2.3.2 - 2026-10-16
 
 - Report child output pipe failures as nonzero exits without retrying an already-started package manager, and release signal handlers when the child closes.

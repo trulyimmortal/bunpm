@@ -9,7 +9,7 @@ const { mapCommand } = require('./mapper');
 const { validateArgs, validateBinary } = require('./validate');
 const { formatStream } = require('./formatter');
 const { doctor } = require('./doctor');
-const { log: diagnose } = require('./log');
+const { logger } = require('./log');
 
 /**
  * @typedef {import('node:child_process').SpawnSyncReturns<string | Buffer>} SpawnResult
@@ -90,7 +90,7 @@ function exitCode(result) {
     const { message, code } = /** @type {NodeJS.ErrnoException} */ (
       result.error
     );
-    diagnose('exec', message, code);
+    logger.error('exec', message, code);
     return 1;
   }
   if (result.signal) return 128 + (os.constants.signals[result.signal] || 1);
@@ -136,7 +136,7 @@ async function main(invokedAs = process.argv[2], args = process.argv.slice(3)) {
     const original = () => {
       const binary = detector.locateBinary(invokedAs);
       if (!binary) {
-        diagnose(
+        logger.error(
           'detector',
           `original ${invokedAs} not found; install ${invokedAs} for this command, or install Bun for supported commands.`,
         );
@@ -223,7 +223,7 @@ async function main(invokedAs = process.argv[2], args = process.argv.slice(3)) {
     if (!started && notStarted(result.error)) return original();
     return exitCode(result);
   } catch (error) {
-    diagnose('wrapper', /** @type {Error} */ (error).message);
+    logger.error('wrapper', /** @type {Error} */ (error).message);
     return 1;
   }
 }

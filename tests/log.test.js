@@ -1,7 +1,12 @@
 const { describe, test, mock, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
 const cp = require('node:child_process');
-const { log, logger, formatDiagnostic } = require('../bunpm/core/log');
+const {
+  LOG_LEVELS,
+  log,
+  logger,
+  formatDiagnostic,
+} = require('../bunpm/core/log');
 const { exitCode } = require('../bunpm/core/wrapper');
 
 const saved = process.env.BUNPM_DEBUG;
@@ -51,6 +56,24 @@ function assertSchema(line, expectedLevel) {
 }
 
 describe('diagnostic logging', () => {
+  test('the frozen level contract matches emitted diagnostics', () => {
+    assert.deepEqual(LOG_LEVELS, ['error', 'warn', 'info', 'debug']);
+    assert.ok(Object.isFrozen(LOG_LEVELS));
+    assert.ok(Object.isFrozen(logger));
+    process.env.BUNPM_DEBUG = '1';
+    const lines = capture(() => {
+      for (const level of LOG_LEVELS)
+        logger[level]('wrapper', 'diagnostic', 'EIO');
+    });
+    assert.equal(lines.length, 8);
+    for (const [index, level] of LOG_LEVELS.entries()) {
+      assert.equal(lines[index * 2], 'bunpm: wrapper: diagnostic');
+      const record = assertSchema(lines[index * 2 + 1], level);
+      assert.equal(record.message, 'diagnostic');
+      assert.equal(record.code, 'EIO');
+    }
+  });
+
   test('without BUNPM_DEBUG a failure is exactly one human line', () => {
     delete process.env.BUNPM_DEBUG;
     assert.deepEqual(
