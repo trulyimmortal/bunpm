@@ -37,6 +37,7 @@ describe('dependency freshness reporting', () => {
       ['{}', 2],
       ['{}', NaN],
       ['{}', 143],
+      ['{"error":{"code":"ECONNREFUSED"}}', 0],
       ['{"error":{"code":"ECONNREFUSED","summary":"registry unavailable"}}', 1],
       ['{"tool":null}', 1],
       ['{"tool":[]}', 1],
