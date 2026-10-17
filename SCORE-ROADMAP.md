@@ -1,133 +1,156 @@
-# bunpm quality roadmap and handoff
+# DataFactor recovery roadmap
 
-Updated: 2026-10-16. Starting revision: `d9c10ee` (2.3.1).
-Scope: Architecture & Robustness, Security Hygiene, Dependency Health.
-Ponytail: fix demonstrated behavior with the smallest complete change and test.
+Updated: 2026-10-17. Planning baseline: `09fc5ec` (v2.3.2).
 
-## Baseline and interpretation
+This document is a handoff for the requested 88+ recovery work. It records
+evidence and acceptance criteria; it does not claim a future score.
 
-Latest user-supplied DataFactor report: **82 / B**.
+## Guardrails
 
-| Dimension                 | Reported score |
-| ------------------------- | -------------: |
-| Architecture & Robustness |             78 |
-| Security Hygiene          |             82 |
-| Dependency Health         |             72 |
-| Test Coverage             |             88 |
-| Docs & Onboarding         |             90 |
-| Code Cleanliness          |             88 |
-| History & Maintenance     |             68 |
-| CI/CD Maturity            |             85 |
+- Keep zero runtime dependencies and Node 16 API compatibility.
+- Keep every authored file strictly below 275 lines; generated lockfiles are
+  exempt by the user's explicit Oct 17 clarification. Current audit found
+  formatter tests at 276 lines and three other test files at 265-271 lines.
+- Do not add Docker, containers, IaC, services, telemetry, or a test framework
+  merely to influence scanner output.
+- Keep each behavior fix and its regression test in one conventional commit.
+- Use X: only for temporary fixtures/caches, clean them after verification, and
+  never commit generated output, credentials, or local paths.
+- `yv3000` remains the maintainer identity. A trulyimmortal PR is permitted for
+  a real independently reviewable change, but both accounts have the same human
+  owner and that must remain disclosed. It cannot be represented as independent
+  review or artificial contributor diversity.
 
-These are external report observations, not measurements produced by this work.
-No improvement in score is guaranteed. Do not rescan until implementation and
-verification finish; the user explicitly deferred the next scan.
+## Report interpretation
 
-The report misses runnable native `node:test` suites and CI checks, misclassifies
-this CLI as a backend, and fails to recognize the tracked `bun.lock`. Preserve
-working tooling; do not add a framework, fake configuration, or infrastructure
-solely to satisfy those detections. Both lockfiles are already tracked.
+The supplied score says 79/B: Architecture 70, Security 80, CI 85, and a Buyer
+Fit failure because no test suite was detected. The repository already has
+native `node:test`, c8 gates, 13 named suites, a structured logger object,
+validation schemas, test metadata, and three-OS CI. This indicates scanner
+detection gaps as well as genuine things to improve.
 
-## Implementation order
+Known implementation facts at this baseline:
 
-Each checkbox represents a complete behavior change with regression tests, not
-an instruction to commit each edited line. Complete validation before committing.
+| Claim from report            | Verified repository state                                                                                | Planned response                                                                                              |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Logger is ad-hoc             | `logger.error/warn/info/debug` exists, but wrapper aliases `log` as `diagnose`; no `LOG_LEVELS` constant | Make logger use explicit and machine-readable without changing output behavior.                               |
+| Validation patterns empty    | both exported names already exist and runtime guards use them                                            | Inspect static shape; add only a non-duplicative declaration or JSDoc that makes current guards discoverable. |
+| CI lacks test/lint/typecheck | commands run in CI, but generic step names may not match scanner rules                                   | Add scanner-readable names while retaining actual commands and quoted YAML trigger.                           |
+| No suite                     | `node:test` is deliberately native, and `testConfig.framework` says so                                   | First reproduce or obtain scanner evidence. Do not add Mocha/Vitest speculatively.                            |
 
-#### 1. Windows installer ownership during rollback
+## Delivery sequence
 
-- [x] Fix `bunpm/platforms/windows/scripts/install.ps1` so a failed directory
-      creation cannot delete a directory created by another installer. (Delivered in `e8162e5`)
-- Evidence: the initial existence check precedes prerequisite checks; `New-Item`
-  is inside a catch block that recursively deletes any existing target.
-- Minimal approach: create the target before entering the rollback-protected
-  copy phase. Only the invocation that created the directory owns cleanup.
-- Regression: create an installation sentinel during a prerequisite probe;
-  installation must fail without removing it. Separately force a copy failure
-  after successful creation and verify owned partial files are removed.
-- Acceptance: native Windows installer/smoke tests pass without registry changes.
+### Gate 0 — establish a truthful baseline
 
-### 2. Unix installer profile read failures
+- Record `git status`, tracked lockfiles, line counts, current Node/Bun versions,
+  package metadata, CI workflow, and the supplied report date.
+- Run the complete local quality sequence through direct Node commands so the
+  stale global bunpm cannot intercept npm. Record actual counts and coverage.
+- Verify the latest GitHub run before modifying workflow semantics.
+- Do not rescan DataFactor until the planned commits and CI finish.
 
-- [x] Fix Linux and macOS `install.sh` profile-marker checks. (Delivered with portable rollback)
-- Evidence: `! grep` treats exit 2 (read failure) as exit 1 (marker absent), so
-  installation may append a marker and report success after a read failure.
-- Distinguish match, absent marker, and read error. On read error preserve the
-  profile, fail installation, and roll back files owned by this invocation.
-- Regression: a controlled grep failure leaves profile bytes unchanged and
-  removes the partial installation; existing success/idempotence tests remain.
-- Acceptance: ShellCheck, Bash syntax, and native Linux/macOS installer CI pass.
+### Gate 1 — restore the strict size invariant
 
-### 3. Child output stream failures
+- Separate line/stream formatting, bootstrap transport/contracts and native
+  installer profiles, and extract mapper assertion helpers. Keep all authored
+  files below 265 lines without lowering assertions or coverage.
+- Test behavior and run the file-count audit in the same commit.
+- This is hygiene only; it must not be presented as a functional score lever.
 
-- [x] Handle stdout/stderr read errors in `bunpm/core/wrapper.js`. (Delivered in `78d23b0`)
-- Evidence: child process errors are handled, but stream error events can escape
-  the async entry point. A child that subsequently exits zero can mask lost output.
-- Record the failure, retain a nonzero result, and clean up listeners. Do not
-  retry an already-started command through another manager.
-- Regression: each stream emits an error followed by child close zero; assert
-  failure, useful diagnostics, no duplicate spawn, and signal-listener cleanup.
+### Gate 2 — architecture and structured diagnostics
 
-### 4. Lossless npm restart fallback
+- Add `LOG_LEVELS = Object.freeze(['error', 'warn', 'info', 'debug'])` to
+  `bunpm/core/log.js`, export it, and test its exact frozen contents.
+- Add the requested `@logging_framework bunpm-diagnostic-logger` documentation
+  only if it accurately describes the current logger API.
+- Replace wrapper's `{ log: diagnose }` import and calls with explicit
+  `logger.error(...)` calls. Preserve existing human stderr, debug JSON schema,
+  exit codes, fallback behavior, and error codes.
+- Keep both files below the line limit; extract no production module solely for
+  line-count cosmetics. Extend `tests/log.test.js` and wrapper diagnostics tests.
+- Acceptance: exact diagnostics remain compatible, each level is covered,
+  syntax/lint/typecheck/format/tests/coverage pass.
 
-- [x] Verify npm's documented restart semantics and route unsafe mappings native. (Delivered via PR #23)
-- Evidence to verify against official npm docs: without a restart script, npm
-  restart runs stop/start behavior that `bun run restart` cannot reproduce.
-- Keep explicit `npm run restart` translation intact. Inspect PNPM's reuse of
-  npm tables before changing a shared entry.
-- Regression: native restart receives exact arguments without Bun discovery;
-  explicit script invocation still maps normally.
+### Gate 3 — validation discoverability without duplicate policy
 
-### 5. Bound formatter buffering for long lines
+- Inspect `validate.js` against the actual static scanner output if obtainable.
+- Keep `input_validation_patterns` as a top-level identifier and exported value.
+  Its current alias to the frozen canonical pattern table is intentional.
+- Add `@security-guard trust-boundary` annotations to exported validators only
+  if the scanner is known to read them. Do not add a second `VALIDATION_SCHEMAS`
+  table that can drift from runtime guards.
+- Prove malformed values still throw `TypeError`; keep coverage at current gates.
 
-- [x] Bound `formatter.js` pending-line memory without truncating output. (Delivered in `8725ef4`)
-- Evidence: a 6.25 MiB newline-free stream currently emits nothing before EOF,
-  even when the destination is fast.
-- Small approach: bypass cosmetics for an oversized line, stream it unchanged,
-  and resume normal formatting after its newline.
-- Regression: output arrives before EOF; concatenated text is preserved; split
-  UTF-8, EOF without newline, and the next normal formatted line all work.
+### Gate 4 — CI signal clarity and dependency health
 
-### 6. Honest dependency health evidence & lockfile detection
+- Add `cache: npm` to every Node setup step only after confirming it works with
+  both npm-lock installation and the Bun quality matrix. This is a performance
+  improvement, not a test result substitute.
+- Rename existing CI steps to contain literal scanner-recognizable commands:
+  `Run test suite (npm test)`, `Run linter (npm run lint)`, and
+  `Run typecheck (npm run typecheck)`. Keep commands themselves unchanged.
+- Preserve quoted `'on'`, non-null `pull_request.branches`, pinned action SHAs,
+  audit behavior, three-OS matrix, c8 hard gate, lockfile checks, and freshness
+  failure distinction.
+- Validate actionlint, PyYAML parsing, and the full pipeline. Check that cache
+  keys use the tracked `package-lock.json`.
 
-- [x] Review the freshness-report CI step, distinguishing exit 1 from fatal errors.
-- [x] Add explicit CI step assertion ensuring `bun.lock` is committed before install.
-- [x] Close the `RELEASE_TAG` env gap in `.env.example`.
-- [x] Add `testConfig` metadata to `package.json` and create `tests/README.md`.
-- Refresh both locks together for dependency changes. Preserve exact dev pins,
-  Node 16 type definitions, and zero runtime dependencies.
+### Gate 5 — resolve the native-test detection issue honestly
 
-### 7. Correct documentation, PR authorship and release
+- Prefer an evidence pack: package `test` script, `node:test` imports,
+  named `describe` suites, c8 config, `tests/README.md`, JUnit artifact, and a
+  passing CI URL.
+- The user confirmed the scanner is proprietary and unavailable locally. Its
+  exact recognition rules cannot be inferred from the supplied report alone.
+- If DataFactor evidence proves its framework list
+  cannot recognize native `node:test`, document the false negative with its
+  exact evidence for support/rescan rather than adding Mocha.
+- Do not add Mocha: prior repository evidence found high-severity Mocha
+  advisories, and this project's current tests rely on Node's native mock API.
+  A framework migration is allowed only after an actual rescan still reports no
+  suite and after audit/compatibility evidence supports a safe proposal.
+  Sharing Mocha-style test names does not make Node test imports, mock APIs,
+  hooks or process isolation interchangeable with Mocha.
 
-- [x] Correct ARCHITECTURE trust-boundary references.
-- [x] Prepare small scoped PRs from `trulyimmortal` for commit diversity. (Delivered PR #23)
-- [x] Recheck full verification sequence and prepare v2.3.2 release.
+### Gate 6 — genuine maintenance work
 
-## Verification and delivery
+- Select one small user-facing bug or compatibility improvement with a real
+  regression test. If suitable, open an honest issue and submit it as
+  `trulyimmortal`; disclose same-owner status and let yv3000 review behavior.
+- Do not manufacture issues, reviews, or commits to alter author statistics.
+- Maintain conventional commit bodies with tests run; do not split one logical
+  change into cosmetic microcommits.
 
-Follow CONTRIBUTING.md. Invoke Node tests directly to avoid the stale local
-bunpm installation intercepting npm. Use the Node-managed npm CLI when needed.
+## Commit and verification rules
 
-Before each coherent commit: syntax, strict ESLint, TypeScript, Prettier, audit,
-native tests, c8 coverage, repeat tests, installer/smoke checks, and diff checks.
-For shell/workflow changes also run ShellCheck, Bash syntax and actionlint.
-Preserve baseline coverage; investigate any regression rather than lowering gates.
-Run the full three-OS GitHub matrix before calling a platform fix verified.
+One gate may produce one or more atomic commits only where each contains a
+complete behavior change and regression test. Before each commit run the
+relevant subset; before push run:
 
-Keep all source and test files strictly under 275 LOC. No source file over 500 LOC.
-Use one real fix plus regression tests per Conventional Commit, with validation
-in the commit body. Main changes use yv3000. Small real issues may use the
-authorized trulyimmortal PR workflow. Both accounts belong to the same person:
-disclose that fact and never present self-review as independent review.
+```sh
+npm run build
+npm test
+npm run test:coverage
+npm run lint
+npm run typecheck
+npm run format:check
+npm audit
+bun audit
+```
 
-No Docker, infrastructure, services, runtime packages, or new test framework.
-No C: writes. Scratch, fixtures and caches belong under the user-approved X:
-testing directory and must be cleaned after use.
+Also run the strict line-count audit, `git diff --check`, native smoke tests,
+repeat tests, and actionlint/ShellCheck for workflow or shell edits. Refresh
+both lockfiles together only when dependencies change.
 
-## Continuation checkpoint
+Push only after local checks pass. Use the documented temporary ruleset bypass
+and restore the empty bypass actor list even if pushing fails. Watch the actual
+GitHub workflow to completion. Create no release or tag unless separately due
+and requested.
 
-- All roadmap items (1 through 7) are completed, verified across 3 native operating systems, and delivered.
-- v2.3.2 is published on GitHub Releases (https://github.com/yv3000/bunpm/releases/tag/v2.3.2).
-- PR #23 authored by `trulyimmortal` and merged by `yv3000` closes Issue #22.
-- Scanner levers (lockfile tracking, testConfig, tests/README.md, .env.example, freshness exit 1 handling) active in CI.
-- All files in repository strictly < 275 LOC (max file: 266 LOC).
-- Ready for official DataFactor rescan at https://datafactor.com/score.
+## Completion criteria
+
+Work is complete when all intended gates are committed, local checks and GitHub
+CI pass, authored files are below 275 lines, zero runtime dependencies remain, and
+the follow-up DataFactor scan is saved alongside a factual comparison. If the
+scanner still misses native tests, report that as an evidenced limitation rather
+than masking it with unsafe dependencies or infrastructure.
