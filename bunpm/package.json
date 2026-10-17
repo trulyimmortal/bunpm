@@ -12,6 +12,7 @@
     "windows",
     "transparent"
   ],
+  "dependencies": {},
   "author": "",
   "license": "MIT",
   "engines": {

@@ -1,6 +1,7 @@
 const { describe, test } = require('node:test');
 const assert = require('node:assert/strict');
 const { mapCommand } = require('../bunpm/core/mapper');
+const { assertBunArgs, assertFallback } = require('./helpers/mapping');
 
 describe('package manager translation tables', () => {
   test('boolean flags with an explicit value fall back instead of being reinterpreted', () => {
@@ -21,31 +22,6 @@ describe('package manager translation tables', () => {
       ['add', '--registry=https://r.test', 'pkg'],
     );
   });
-
-  /**
-   * @param {string} tool
-   * @param {[string[], string[]][]} cases
-   */
-  function assertBunArgs(tool, cases) {
-    for (const [args, expected] of cases)
-      assert.deepEqual(
-        mapCommand(tool, args).bunArgs,
-        expected,
-        `${tool} ${args.join(' ')}`,
-      );
-  }
-
-  /**
-   * @param {string} tool
-   * @param {string[][]} cases
-   */
-  function assertFallback(tool, cases) {
-    for (const args of cases)
-      assert.deepEqual(mapCommand(tool, args), {
-        fallbackTo: tool,
-        fallbackArgs: args,
-      });
-  }
 
   test('npm command aliases map to their Bun equivalents', () => {
     assertBunArgs('npm', [
